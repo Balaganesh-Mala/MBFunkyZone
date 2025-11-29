@@ -24,11 +24,17 @@ const ProductCard = ({ product }) => {
         </div>
       )}
 
-      <div className="w-full h-[150px] sm:h-[160px] md:h-[170px] lg:h-[180px] bg-gray-100 overflow-hidden">
+      <div className="relative w-full h-[150px] sm:h-[160px] md:h-[170px] lg:h-[180px] bg-gray-100 overflow-hidden">
+        {/* First Image */}
         <img
           src={product.images[0]}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+          className="absolute w-full h-full object-cover transition-opacity duration-500 opacity-100 group-hover:opacity-0"
+        />
+        <img
+          src={product.images[1]}
+          alt={`${product.name} preview`}
+          className="absolute w-full h-full object-cover transition-opacity duration-500 opacity-0 group-hover:opacity-100 scale-100 group-hover:scale-105"
         />
       </div>
 

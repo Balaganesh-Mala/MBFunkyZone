@@ -11,6 +11,7 @@ import categoryRoutes from "./routes/category.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import heroRoutes from "./routes/hero.routes.js";
 import settingsRoutes from "./routes/settings.routes.js";
+import userRoutes from "./routes/user.routes.js";
 
 dotenv.config();
 
@@ -26,7 +27,8 @@ app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/auth", authRoutes);     
+app.use("/api/auth", authRoutes); 
+app.use("/api/users", userRoutes);    
 app.use("/api/admin", adminRoutes);
 app.use("/api/hero", heroRoutes);
 app.use("/api/settings", settingsRoutes);

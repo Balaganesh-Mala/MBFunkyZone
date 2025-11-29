@@ -1,5 +1,5 @@
 import asyncHandler from "express-async-handler";
-import User from "../models/user.model";
+import User from "../models/user.model.js";
 
 //
 // 🧍‍♂️ Get all users (Admin only)
