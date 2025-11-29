@@ -37,6 +37,7 @@ const Navbar = () => {
           <ul className="hidden lg:flex gap-8 text-gray-700 text-sm font-semibold">
             <li><Link to="/" className="hover:text-black">HOME</Link></li>
             <li><Link to="/shop" className="hover:text-black">SHOP</Link></li>
+            <li><Link to="/orders" className="hover:text-black">ORDERS</Link></li>
             <li><Link to="/about" className="hover:text-black">ABOUT</Link></li>
             <li><Link to="/contact" className="hover:text-black">CONTACT</Link></li>
           </ul>
@@ -95,15 +96,6 @@ const Navbar = () => {
           />
         </div>
 
-        {/* Mobile Search */}
-        <div className="flex items-center bg-gray-100 px-3 py-2 rounded-full mb-4 sm:hidden">
-          <FaSearch className="text-gray-500 mr-2" />
-          <input
-            type="text"
-            placeholder="Search products..."
-            className="bg-transparent outline-none text-xs w-full"
-          />
-        </div>
 
         {/* Sidebar Links */}
         <ul className="flex flex-col gap-4 text-gray-800 text-xs sm:text-sm font-semibold">
@@ -112,6 +104,9 @@ const Navbar = () => {
           </li>
           <li onClick={() => setMobileMenuOpen(false)}>
             <Link to="/shop" className="hover:text-black">Shop</Link>
+          </li>
+          <li onClick={() => setMobileMenuOpen(false)}>
+            <Link to="/orders" className="hover:text-black">Orders</Link>
           </li>
           <li onClick={() => setMobileMenuOpen(false)}>
             <Link to="/about" className="hover:text-black">About</Link>

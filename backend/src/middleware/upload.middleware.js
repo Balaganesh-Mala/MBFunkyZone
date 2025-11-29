@@ -1,26 +1,24 @@
 import multer from "multer";
-import { v2 as cloudinary } from "cloudinary";
-import streamifier from "streamifier";
+import sharp from "sharp";
+import cloudinary from "../config/cloudinary.js";
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const upload = multer({ storage: multer.memoryStorage() });
 
-const storage = multer.memoryStorage();
-export const upload = multer({ storage });
+export const uploadToCloudinary = async (buffer, filename) => {
+  const optimizedImage = await sharp(buffer)
+    .resize(800)
+    .toFormat("webp", { quality: 80 })
+    .toBuffer();
 
-export const uploadToCloudinary = (buffer, folder = "products") => {
   return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder },
+    cloudinary.uploader.upload_stream(
+      { resource_type: "image", folder: "ecommerce-products", public_id: filename.split(".")[0] },
       (err, result) => {
         if (err) reject(err);
-        else resolve(result);
+        else resolve(result.secure_url);
       }
-    );
-
-    streamifier.createReadStream(buffer).pipe(stream);
+    ).end(optimizedImage);
   });
 };
+
+export default upload;

@@ -15,7 +15,7 @@ const HeroCarousel = () => {
         loop={true}
         pagination={{ clickable: true }}
         navigation={true}
-        className="rounded-2xl shadow-lg"
+        className="l shadow-lg"
       >
         {heroSlides.map((slide) => (
           <SwiperSlide key={slide.id}>

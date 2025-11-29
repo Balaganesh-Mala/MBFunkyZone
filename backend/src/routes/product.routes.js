@@ -1,28 +1,44 @@
 import express from "express";
+import upload from "../middleware/upload.middleware.js";
+
 import {
   createProduct,
-  getAllProducts,
+  getProducts,
   getProductById,
   updateProduct,
   deleteProduct,
-  addReview,
 } from "../controllers/product.controller.js";
+
 import { protect } from "../middleware/auth.middleware.js";
 import { isAdmin } from "../middleware/admin.middleware.js";
-import { upload } from "../middleware/upload.middleware.js";
 
 const router = express.Router();
 
-// USER
-router.get("/", getAllProducts);
-router.get("/:id", getProductById);
-router.post("/:id/review", protect, addReview);
+// 🌍 Public routes (no login needed)
+router.get("/", getProducts); // ✅ anyone can view all products
+router.get("/:id", getProductById); // ✅ anyone can view single product
 
+// 🔐 Admin protected routes
+router.post(
+  "/upload",
+  protect,
+  isAdmin,
+  upload.fields([{ name: "images", maxCount: 4 }]),
+  createProduct
+);
 
-// ADMIN
-router.post("/", protect, isAdmin, upload.single("image"), createProduct);
-router.put("/:id", protect, isAdmin, upload.single("image"), updateProduct);
-router.delete("/:id", protect, isAdmin, deleteProduct);
+router.put(
+  "/:id",
+  protect,
+  isAdmin,
+  updateProduct 
+);
 
+router.delete(
+  "/:id",
+  protect,
+  isAdmin,
+  deleteProduct 
+);
 
 export default router;

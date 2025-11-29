@@ -1,57 +1,54 @@
+// server/models/Product.js
 import mongoose from "mongoose";
+
+const reviewSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    rating: { type: Number, required: true, min: 0, max: 5 },
+    comment: { type: String, required: true },
+  },
+  { _id: false }
+);
+
+const sizeSchema = new mongoose.Schema(
+  {
+    shirt: [{ type: String }], 
+    pant: [{ type: String }],  // e.g. 28, 30, 32 ...
+  },
+  { _id: false }
+);
 
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-
-    description: { type: String, required: true },
-
     price: { type: Number, required: true },
+    mrp: { type: Number, required: true },
 
-    mrp: { type: Number, default: 0 }, // Optional for discount display
+    rating: { type: Number, default: 0 },  // average rating
+    ratings: { type: Number, default: 0 }, // total rating count if needed
 
-    stock: { type: Number, default: 0 },
+    category: { type: String, required: true }, // Office, Casual, Pants, Shirts, etc.
+    brand: { type: String, required: true },
 
-    weight: { type: String },
+    stock: { type: Number, required: true, default: 0 },
 
-    flavor: { type: String },
+    images: [{ type: String, required: true }], // Cloudinary URLs in real backend
 
-    brand: { type: String, default: "Hunger Bites" },
+    sizes: sizeSchema, // { shirt: [...], pant: [...] }
+
+    description: { type: String, default: "" },
 
     isFeatured: { type: Boolean, default: false },
-
-    isBestSeller: { type: Boolean, default: false }, 
-
-    images: [
-      {
-        public_id: String,
-        url: String,
-      },
-    ],
-
-    category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
-      required: true
-    },
-
-    ratings: { type: Number, default: 0 },
-
-    numOfReviews: { type: Number, default: 0 },
-
-    reviews: [
-      {
-        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        name: String,
-        rating: Number,
-        comment: String,
-      },
-    ],
-
+    isBestSeller: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+
+    reviews: [reviewSchema],
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 const Product = mongoose.model("Product", productSchema);
+
 export default Product;

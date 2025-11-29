@@ -10,6 +10,7 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Contact from "../pages/Contact";
 import About from "../pages/About";
+import Orders from "../pages/Orders";
 
 
 
@@ -23,6 +24,7 @@ const AppRoutes = () => {
       <Route path="/cart" element={<Cart />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/contact" element={<Contact/>}/>
+      <Route path="/orders" element={<Orders />} />
       <Route path="/about" element={<About/>}/>
       <Route path="/login" element={<Login/>}/>
       <Route path="/register" element={<Register/>}/>

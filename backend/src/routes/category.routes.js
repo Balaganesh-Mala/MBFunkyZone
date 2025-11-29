@@ -1,25 +1,24 @@
 import express from "express";
-import { upload } from "../middleware/upload.middleware.js";
-import { uploadToCloudinary } from "../middleware/upload.middleware.js";
+import upload from "../middleware/categoryUpload.middleware.js";
 
 import {
   createCategory,
   getCategories,
   updateCategory,
-  deleteCategory,
+  deleteCategory
 } from "../controllers/category.controller.js";
+
+import { protect } from "../middleware/auth.middleware.js";
+import { isAdmin } from "../middleware/admin.middleware.js";
 
 const router = express.Router();
 
-
-router.post("/", upload.single("image"), createCategory);
-
+// Public route → anyone can see categories
 router.get("/", getCategories);
 
-
-router.put("/:id", upload.single("image"), updateCategory);
-
-// DELETE CATEGORY
-router.delete("/:id", deleteCategory);
+// Admin routes → protected
+router.post("/", protect, isAdmin, upload.single("image"), createCategory);
+router.put("/:id", protect, isAdmin, upload.single("image"), updateCategory);
+router.delete("/:id", protect, isAdmin, deleteCategory);
 
 export default router;

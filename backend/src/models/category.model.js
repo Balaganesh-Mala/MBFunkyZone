@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+const imageSchema = new mongoose.Schema({
+  public_id: String,
+  url: String,
+}, { _id: false });
+
 const categorySchema = new mongoose.Schema(
   {
     name: {
@@ -8,16 +13,12 @@ const categorySchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
-
     description: {
       type: String,
       default: "",
     },
-
-    image: {
-      public_id: String,
-      url: String,
-    },
+    image: imageSchema,
+    isActive: { type: Boolean, default: true }, // optional, helps filtering
   },
   { timestamps: true }
 );

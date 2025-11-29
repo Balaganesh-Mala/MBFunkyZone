@@ -4,13 +4,14 @@ import { Autoplay, Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
-import { featuredProducts } from "../../data/dummyProducts";
+import { shopProducts} from "../../data/dummyShopProducts";
 import ProductCard from "../ui/ProductCard";
 
 const FeaturedCarousel = () => {
+  const featuredProducts = shopProducts.filter(p => p.isFeatured === true);
   return (
-    <section className="px-6 py-12">
-      <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-10">
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+      <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-5">
         Featured Products
       </h2>
 
@@ -23,11 +24,11 @@ const FeaturedCarousel = () => {
           slidesPerView={1}
           spaceBetween={20}
           breakpoints={{
-            480: { slidesPerView: 1.3 },
-            640: { slidesPerView: 2 },
-            768: { slidesPerView: 2.5 },
-            1024: { slidesPerView: 3.5 },
-            1280: { slidesPerView: 4 }
+            480: { slidesPerView: 2.3 },
+            640: { slidesPerView: 3 },
+            768: { slidesPerView: 3.5 },
+            1024: { slidesPerView: 4.5 },
+            1280: { slidesPerView: 5}
           }}
         >
           {featuredProducts.map((product) => (

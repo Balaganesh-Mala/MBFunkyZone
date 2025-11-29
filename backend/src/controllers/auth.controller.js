@@ -1,29 +1,25 @@
 import asyncHandler from "express-async-handler";
 import User from "../models/user.model.js";
-import bcrypt from "bcryptjs";
 
-//
-// 🧍‍♂️ Register User
-//
 export const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password, phone } = req.body;
 
   if (!name || !email || !password) {
     res.status(400);
-    throw new Error("Please fill in all required fields");
+    throw new Error("All fields are required");
   }
 
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
+  const exists = await User.findOne({ email });
+  if (exists) {
     res.status(400);
     throw new Error("User already exists");
   }
 
-  const user = await User.create({ name, email, password, phone });
+  const user = await User.create({ name, email, password, phone, role: "user" });
 
   res.status(201).json({
     success: true,
-    message: "User registered successfully",
+    message: "User Registered",
     user: {
       _id: user._id,
       name: user.name,
@@ -34,21 +30,24 @@ export const registerUser = asyncHandler(async (req, res) => {
   });
 });
 
-//
-// 🔐 Login User
-//
 export const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+
   const user = await User.findOne({ email }).select("+password");
 
   if (!user || !(await user.matchPassword(password))) {
     res.status(401);
-    throw new Error("Invalid email or password");
+    throw new Error("Invalid Credentials");
+  }
+
+  if (user.role !== "user") {
+    res.status(403);
+    throw new Error("Not authorized as user");
   }
 
   res.status(200).json({
     success: true,
-    message: "Login successful",
+    message: "User Login Success",
     user: {
       _id: user._id,
       name: user.name,
@@ -59,14 +58,11 @@ export const loginUser = asyncHandler(async (req, res) => {
   });
 });
 
-//
-// 👤 Get Profile (Logged user)
-//
 export const getProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id).select("-password");
   if (!user) {
     res.status(404);
-    throw new Error("User not found");
+    throw new Error("User Not Found");
   }
   res.status(200).json({ success: true, user });
 });

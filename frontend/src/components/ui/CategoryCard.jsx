@@ -2,7 +2,7 @@ import React from "react";
 
 const CategoryCard = ({ category }) => {
   return (
-    <div className="group cursor-pointer bg-white rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden">
+    <div className="group cursor-pointer bg-white rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden border">
       <img
         src={category.image}
         alt={category.name}

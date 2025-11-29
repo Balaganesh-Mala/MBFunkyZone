@@ -1,256 +1,148 @@
-import asyncHandler from "express-async-handler";
 import Product from "../models/product.model.js";
-import cloudinary from "cloudinary";
-import { uploadToCloudinary } from "../middleware/upload.middleware.js";
+import { uploadToCloudinary as uploadMultipleToCloudinary } from "../middleware/upload.middleware.js";
 
-//
-// ➕ CREATE PRODUCT
-//
-export const createProduct = asyncHandler(async (req, res) => {
-  const {
-    name,
-    description,
-    price,
-    mrp,
-    category,
-    stock,
-    weight,
-    flavor,
-    brand,
-    isFeatured,
-    isBestSeller
-  } = req.body;
+export const createProduct = async (req, res) => {
+  try {
+    const { name, price, mrp, category, brand, stock, sizes, description, isFeatured, isBestSeller, isActive } = req.body;
 
-  if (!name || !price || !category) {
-    res.status(400);
-    throw new Error("Name, price and category are required");
-  }
+    // ✅ FIXED Image validation
+    if (!req.files?.images || req.files.images.length !== 4) {
+      return res.status(400).json({ message: "Please upload exactly 4 images ❗" });
+    }
 
-  let images = [];
+    // ✅ Upload buffers one by one
+    const imageUrls = [];
+    for (const file of req.files.images) {
+      const url = await uploadMultipleToCloudinary(file.buffer, file.originalname);
+      imageUrls.push(url);
+    }
 
-  if (req.file) {
-    const imgUpload = await uploadToCloudinary(
-      req.file.buffer,
-      "hungerbites/products"
-    );
-
-    images.push({
-      public_id: imgUpload.public_id,
-      url: imgUpload.secure_url,
+    const product = new Product({
+      name,
+      price: Number(price),
+      mrp: Number(mrp),
+      category,
+      brand,
+      stock: Number(stock),
+      sizes: sizes ? JSON.parse(sizes) : {},
+      images: imageUrls,
+      isFeatured: !!isFeatured,
+      isBestSeller: !!isBestSeller,
+      isActive: isActive !== undefined ? isActive : true,
+      description,
     });
+
+    const savedProduct = await product.save();
+    res.status(201).json({ success: true, message: "Product created ✅", product: savedProduct });
+
+  } catch (error) {
+    console.error("Create product error:", error);
+    res.status(500).json({ message: "Server error ❌", error: error.message });
   }
+};
 
-  const product = await Product.create({
-    name,
-    description,
-    price,
-    mrp,
-    category,
-    stock: stock || 0,
-    weight,
-    flavor,
-    brand,
-    isFeatured: isFeatured || false,
-    isBestSeller: isBestSeller || false,
-    images
-  });
+/**
+ * @desc    Get all products with filters and pagination
+ * @route   GET /api/products
+ */
+export const getProducts = async (req, res) => {
+  try {
+    const { search = "", category = "", minRating = "", page = 1, limit = 10, sort = "" } = req.query;
+    const query = { isActive: true };
 
-  res.status(201).json({
-    success: true,
-    message: "Product created",
-    product,
-  });
-});
-
-//
-// 📦 GET ALL PRODUCTS
-//
-//
-// 📦 GET ALL PRODUCTS — WITH FILTERS (PRICE + FLAVOR)
-//
-export const getAllProducts = asyncHandler(async (req, res) => {
-  const { search, category, featured, bestseller, flavor, sort } = req.query;
-
-  let query = {};
-
-  if (search) query.name = { $regex: search, $options: "i" };
-  if (category) query.category = category;
-  if (featured) query.isFeatured = featured === "true";
-  if (bestseller) query.isBestSeller = bestseller === "true";
-
-  // ⭐ Flavor filter
-  if (flavor) query.flavor = { $regex: flavor, $options: "i" };
-
-  // Build base query
-  let dbQuery = Product.find(query).populate("category", "name");
-
-  // ⭐ Sorting (price low-high / high-low)
-  if (sort === "low-high") {
-    dbQuery = dbQuery.sort({ price: 1 }); // ascending
-  }
-  if (sort === "high-low") {
-    dbQuery = dbQuery.sort({ price: -1 }); // descending
-  }
-
-  // Default sorting by latest
-  if (!sort) {
-    dbQuery = dbQuery.sort({ createdAt: -1 });
-  }
-
-  const products = await dbQuery;
-
-  res.status(200).json({
-    success: true,
-    products,
-  });
-});
-
-
-//
-// 🔍 GET PRODUCT BY ID
-//
-export const getProductById = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id).populate("category");
-
-  if (!product) {
-    res.status(404);
-    throw new Error("Product not found");
-  }
-
-  res.status(200).json({ success: true, product });
-});
-
-//
-// ✏ UPDATE PRODUCT
-//
-export const updateProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
-
-  if (!product) {
-    res.status(404);
-    throw new Error("Product not found");
-  }
-
-  // Replace image if new one uploaded
-  if (req.file) {
-    for (let img of product.images) {
-      await cloudinary.uploader.destroy(img.public_id);
+    if (search) {
+      query.name = { $regex: search, $options: "i" };
     }
 
-    const uploaded = await uploadToCloudinary(
-      req.file.buffer,
-      "hungerbites/products"
-    );
-
-    product.images = [
-      {
-        public_id: uploaded.public_id,
-        url: uploaded.secure_url,
-      },
-    ];
-  }
-
-  const fields = [
-    "name", "description", "price", "mrp",
-    "stock", "category", "flavor", "weight",
-    "brand", "isFeatured", "isBestSeller"
-  ];
-
-  fields.forEach(f => {
-    if (req.body[f] !== undefined) {
-      product[f] = req.body[f];
+    if (category) {
+      query.category = category;
     }
-  });
 
-  await product.save();
-
-  res.status(200).json({
-    success: true,
-    message: "Product updated",
-    product,
-  });
-});
-
-//
-// ❌ DELETE PRODUCT
-//
-export const deleteProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
-
-  if (!product) {
-    res.status(404);
-    throw new Error("Product not found");
-  }
-
-  for (let img of product.images) {
-    if (img.public_id) {
-      await cloudinary.uploader.destroy(img.public_id);
+    if (minRating) {
+      query.rating = { $gte: Number(minRating) };
     }
+
+    let productsQuery = Product.find(query);
+
+    if (sort === "low-high") productsQuery = productsQuery.sort({ price: 1 });
+    if (sort === "high-low") productsQuery = productsQuery.sort({ price: -1 });
+    if (sort === "top-rated") productsQuery = productsQuery.sort({ rating: -1 });
+
+    const skip = (page - 1) * limit;
+    const total = await Product.countDocuments(query);
+    const products = await productsQuery.skip(skip).limit(Number(limit));
+
+    res.status(200).json({ products, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (error) {
+    console.error("Get products error:", error);
+    res.status(500).json({ message: "Server error ❌" });
   }
+};
 
-  await product.deleteOne();
-
-  res.status(200).json({
-    success: true,
-    message: "Product deleted",
-  });
-});
-
-
-export const addReview = asyncHandler(async (req, res) => {
-  const { rating, comment } = req.body;
-  const productId = req.params.id;
-
-  const product = await Product.findById(productId);
-  if (!product) {
-    res.status(404);
-    throw new Error("Product not found");
+/**
+ * @desc    Get single product
+ * @route   GET /api/products/:id
+ */
+export const getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product || !product.isActive) {
+      return res.status(404).json({ message: "Product not found ❌" });
+    }
+    res.status(200).json(product);
+  } catch (error) {
+    console.error("Get product error:", error);
+    res.status(500).json({ message: "Server error ❌" });
   }
+};
 
-  // Check if user already reviewed
-  const alreadyReviewed = product.reviews.find(
-    (r) => r.user.toString() === req.user._id.toString()
-  );
+/**
+ * @desc    Update existing product
+ * @route   PUT /api/products/:id
+ */
+export const updateProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found ❌" });
 
-  if (alreadyReviewed) {
-    res.status(400);
-    throw new Error("You already reviewed this product");
+    const { name, price, mrp, category, brand, stock, sizes, description, isFeatured, isBestSeller, isActive } = req.body;
+
+    product.name = name ?? product.name;
+    product.price = price ?? product.price;
+    product.mrp = mrp ?? product.mrp;
+    product.category = category ?? product.category;
+    product.brand = brand ?? product.brand;
+    product.stock = stock ?? product.stock;
+    product.description = description ?? product.description;
+    product.isFeatured = isFeatured ?? product.isFeatured;
+    product.isBestSeller = isBestSeller ?? product.isBestSeller;
+    product.isActive = isActive ?? product.isActive;
+
+    if (sizes) {
+      product.sizes = sizes;
+    }
+
+    const updatedProduct = await product.save();
+    res.status(200).json({ message: "Product updated successfully ✅", product: updatedProduct });
+  } catch (error) {
+    console.error("Update product error:", error);
+    res.status(500).json({ message: "Server error ❌" });
   }
+};
 
-  // Check if user purchased and delivered
-  const deliveredOrder = await Order.findOne({
-    user: req.user._id,
-    "orderItems.productId": productId,
-    orderStatus: "Delivered",
-  });
+/**
+ * @desc    Delete product
+ * @route   DELETE /api/products/:id
+ */
+export const deleteProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found ❌" });
 
-  if (!deliveredOrder) {
-    res.status(400);
-    throw new Error("You can review only after the product is delivered");
+    await product.deleteOne();
+    res.status(200).json({ message: "Product deleted successfully ✅" });
+  } catch (error) {
+    console.error("Delete product error:", error);
+    res.status(500).json({ message: "Server error ❌" });
   }
-
-  const review = {
-    user: req.user._id,
-    name: req.user.name,
-    rating: Number(rating),
-    comment,
-    createdAt: new Date(),
-  };
-
-  product.reviews.push(review);
-
-  // Update rating
-  product.numOfReviews = product.reviews.length;
-  product.ratings =
-    product.reviews.reduce((acc, item) => acc + item.rating, 0) /
-    product.reviews.length;
-
-  await product.save();
-
-  res.status(200).json({
-    success: true,
-    message: "Review added",
-    reviews: product.reviews,
-  });
-});
-
+};

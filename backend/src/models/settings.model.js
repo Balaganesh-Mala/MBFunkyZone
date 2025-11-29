@@ -1,14 +1,14 @@
 import mongoose from "mongoose";
 
+const logoSchema = new mongoose.Schema({
+  public_id: String,
+  url: String,
+}, { _id: false });
+
 const settingsSchema = new mongoose.Schema(
   {
     storeName: { type: String, default: "Hunger Bites" },
-    logo: [
-      {
-        public_id: String,
-        url: String,
-      },
-    ],
+    logo: { type: logoSchema, default: null },  // ✅ single logo object
     supportEmail: { type: String, default: "" },
     supportPhone: { type: String, default: "" },
     address: { type: String, default: "" },
@@ -16,4 +16,5 @@ const settingsSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Settings", settingsSchema);
+const Settings = mongoose.model("Settings", settingsSchema);
+export default Settings;
