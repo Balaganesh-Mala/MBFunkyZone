@@ -31,7 +31,7 @@ const App = () => {
 
         {/* Admin protected area */}
         <Route
-          path="/"
+          path="/admin"
           element={
             <ProtectedRoute>
               <AdminLayout />
