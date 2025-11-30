@@ -37,9 +37,15 @@ const AddProduct = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.get("/api/categories");
-        setCategories(res.data.categories || []);
-      } catch {}
+        const res = await api.get("/categories");
+        console.log("Category API response:", res.data);
+
+        // ✅ NEW: Extract array properly
+        setCategories(res.data.categories);
+      } catch (error) {
+        console.error("Failed to load categories:", error);
+        Swal.fire("Error", "Failed to load categories ❗", "error");
+      }
     })();
   }, []);
 
@@ -178,18 +184,24 @@ const AddProduct = () => {
 
                 <div>
                   <Label>Category *</Label>
-                  <Input
+                  <select
                     name="category"
                     value={form.category}
-                    onChange={handleChange}
-                    list="categoryList"
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, category: e.target.value }))
+                    }
                     required
-                  />
-                  <datalist id="categoryList">
+                    className="w-full border rounded-1xl.2 p-2 text-sm"
+                  >
+                    <option value="" disabled>
+                      Select a category
+                    </option>
                     {categories.map((c) => (
-                      <option key={c._id} value={c.name} />
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
                     ))}
-                  </datalist>
+                  </select>
                 </div>
 
                 <div>

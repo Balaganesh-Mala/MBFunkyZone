@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import api from "../../services/api";
 import { Button } from "../../components/ui/button.jsx";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card.jsx";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../components/ui/card.jsx";
 import { Switch } from "../../components/ui/switch.jsx";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -13,7 +18,12 @@ const ProductManager = () => {
   const loadProducts = async () => {
     try {
       const res = await api.get("/products");
-      setProducts(res.data.products || []);
+      setProducts(
+        res.data.products?.map((p) => ({
+          ...p,
+          category: p.category || {}, // ensure category object always exists
+        })) || []
+      );
     } catch (err) {
       console.error("Fetch error", err);
       Swal.fire("Error", "Failed to fetch products ❗", "error");
@@ -59,10 +69,11 @@ const ProductManager = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
-
       {/* 🔹 Header */}
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <h1 className="text-xl md:text-2xl font-bold text-gray-800">Admin Product Manager</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+          Admin Product Manager
+        </h1>
         <Button onClick={() => navigate("/admin/products/add")}>
           + Add Product
         </Button>
@@ -76,7 +87,6 @@ const ProductManager = () => {
 
         <CardContent>
           <div className="overflow-x-auto rounded-lg border">
-
             {/* 🟦 Responsive Table */}
             <table className="min-w-[600px] w-full text-xs md:text-sm">
               <thead className="border-b bg-gray-50">
@@ -94,40 +104,61 @@ const ProductManager = () => {
 
               <tbody>
                 {products.map((p) => (
-                  <tr key={p._id} className="border-b hover:bg-gray-100 transition">
-                    <td className="p-2 md:p-3 font-medium text-gray-800">{p.name}</td>
-                    <td className="p-2 md:p-3">{p.category}</td>
-                    <td className="p-2 md:p-3">₹{Number(p.price).toLocaleString()}</td>
+                  <tr
+                    key={p._id}
+                    className="border-b hover:bg-gray-100 transition"
+                  >
+                    <td className="p-2 md:p-3 font-medium text-gray-800">
+                      {p.name}
+                    </td>
+                    <td className="p-2 md:p-3">{p.category.name}</td>
+                    <td className="p-2 md:p-3">
+                      ₹{Number(p.price).toLocaleString()}
+                    </td>
                     <td className="p-2 md:p-3">{p.stock}</td>
 
                     {/* 🟡 Toggle Switch */}
                     <td className="p-2 md:p-3">
                       <Switch
                         checked={p.isActive}
-                        onCheckedChange={(val) => handleToggle(p._id, "isActive", val)}
+                        onCheckedChange={(val) =>
+                          handleToggle(p._id, "isActive", val)
+                        }
                       />
                     </td>
 
                     <td className="p-2 md:p-3">
                       <Switch
                         checked={p.isFeatured}
-                        onCheckedChange={(val) => handleToggle(p._id, "isFeatured", val)}
+                        onCheckedChange={(val) =>
+                          handleToggle(p._id, "isFeatured", val)
+                        }
                       />
                     </td>
 
                     <td className="p-2 md:p-3">
                       <Switch
                         checked={p.isBestSeller}
-                        onCheckedChange={(val) => handleToggle(p._id, "isBestSeller", val)}
+                        onCheckedChange={(val) =>
+                          handleToggle(p._id, "isBestSeller", val)
+                        }
                       />
                     </td>
 
                     {/* 🔘 Edit & Delete */}
                     <td className="p-2 md:p-3 space-x-2 text-center">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(p)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(p)}
+                      >
                         Edit
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDelete(p._id)}>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(p._id)}
+                      >
                         Delete
                       </Button>
                     </td>
@@ -143,11 +174,9 @@ const ProductManager = () => {
                 )}
               </tbody>
             </table>
-
           </div>
         </CardContent>
       </Card>
-
     </div>
   );
 };

@@ -1,10 +1,14 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const CategoryCard = ({ category }) => {
   return (
-    <div className="group cursor-pointer bg-white rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden border">
+    <Link
+      to={`/products?category=${category._id}`} // ✅ link with _id
+      className="block group cursor-pointer bg-white rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden border"
+    >
       <img
-        src={category.image}
+        src={category.image?.url} // ✅ FIXED — correct API path
         alt={category.name}
         className="w-full h-48 object-cover group-hover:scale-105 transition duration-300"
       />
@@ -13,7 +17,7 @@ const CategoryCard = ({ category }) => {
           {category.name}
         </h3>
       </div>
-    </div>
+    </Link>
   );
 };
 

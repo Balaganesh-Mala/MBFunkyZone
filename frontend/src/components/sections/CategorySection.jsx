@@ -1,40 +1,36 @@
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
+import { Loader2 } from "lucide-react";
 
-import { categories } from "../../data/dummyCategories";
 import CategoryCard from "../ui/CategoryCard";
-
-import leftTall from "../../assets/images/image1.jpg";
-import leftTall2 from "../../assets/images/image2.jpg";
-import leftTall3 from "../../assets/images/image3.jpg";
-import leftTall4 from "../../assets/images/image5.jpg";
+import api from "../../api/axios.js"; // ✅ axios instance using env
 
 const CategorySection = () => {
-  const categoriesList = [
-    {
-      name: "Snacks & Namkeen",
-      image: `${leftTall}`,
-      link: "/products?category=snacks",
-      size: "row-span-2 h-[340px]",
-    },
-    {
-      name: "Dry Fruits",
-      image: `${leftTall2}`,
-      link: "/products?category=dry-fruits",
-      size: "h-[160px]",
-    },
-    {
-      name: "Healthy Trail Mix",
-      image: `${leftTall4}`,
-      link: "/products?category=healthy-mix",
-      size: "h-[160px]",
-    },
-    {
-      name: "Makhana",
-      image: `${leftTall3}`,
-      link: "/products?category=makhana",
-      size: "row-span-2 h-[340px]",
-    },
-  ];
+  const [categories, setCategories] = useState([]); // ✅ real categories
+  const [loading, setLoading] = useState(true); // ✅ start with loader
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get("/categories");
+        console.log("Full API response:", res.data);
+
+        // ✅ Fix: Correct data mapping
+        if (res.data.success && Array.isArray(res.data.categories)) {
+          setCategories(res.data.categories);
+        } else {
+          setCategories([]);
+          Swal.fire("Error", "Invalid API data ❗", "error");
+        }
+      } catch (err) {
+        console.error("Category Fetch Error:", err);
+        Swal.fire("Error", "Failed to load categories ❗", "error");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   return (
     <section className="max-w-7xl mx-auto px-6 py-20">
@@ -46,75 +42,100 @@ const CategorySection = () => {
         Choose your favorite category and discover delicious treats.
       </p>
 
-      {/* 3 COLUMN GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-14">
-        {/* LEFT TALL */}
-        <Link
-          to={categories[0].link}
-          className={`bg-gray-200 rounded-xl overflow-hidden relative group ${categoriesList[0].size}`}
-        >
-          <img
-            src={categories[0].image}
-            alt={categories[0].name}
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-          />
-          <p className="absolute bottom-3 left-3 text-white text-lg font-medium">
-            {categories[0].name}
-          </p>
-        </Link>
-
-        {/* CENTER TOP */}
-        <Link
-          to={categories[1].link}
-          className={`bg-gray-200 rounded-xl overflow-hidden relative group ${categoriesList[1].size}`}
-        >
-          <img
-            src={categories[1].image}
-            alt={categories[1].name}
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-          />
-          <p className="absolute bottom-3 left-3 text-white">
-            {categories[1].name}
-          </p>
-        </Link>
-
-        {/* RIGHT TALL (NOW FULL HEIGHT) */}
-        <Link
-          to={categories[3].link}
-          className={`bg-gray-200 rounded-xl overflow-hidden relative group ${categoriesList[3].size}`}
-        >
-          <img
-            src={categories[3].image}
-            alt={categories[3].name}
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-          />
-          <p className="absolute bottom-3 left-3 text-white text-lg font-medium">
-            {categories[3].name}
-          </p>
-        </Link>
-
-        {/* CENTER BOTTOM */}
-        <Link
-          to={categories[2].link}
-          className={`bg-gray-200 rounded-xl overflow-hidden relative group ${categoriesList[2].size}`}
-        >
-          <img
-            src={categories[2].image}
-            alt={categories[2].name}
-            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-          />
-          <p className="absolute bottom-3 left-3 text-white">
-            {categories[2].name}
-          </p>
-        </Link>
-      </div>
-      <div className="px-6 py-10 ">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {categories.slice(4).map((cat) => (
-            <CategoryCard key={cat.id} category={cat} />
-          ))}
+      {/* ✅ Loader UI untouched */}
+      {loading && (
+        <div className="flex justify-center mt-10">
+          <Loader2 className="w-6 h-6 animate-spin" />
         </div>
-      </div>
+      )}
+
+      {/* ✅ Keep existing 3-column UI but fix image paths */}
+      {!loading && categories.length >= 4 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-14">
+          {/* LEFT TALL ✅ fixed */}
+          <Link
+            to={`/products?category=${categories[0]._id}`}
+            className="bg-gray-200 rounded-xl overflow-hidden relative group row-span-2 h-[340px]"
+          >
+            <img
+              src={categories[0].image.url} // ✅ FIXED
+              alt={categories[0].name}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+            />
+            <div className="absolute bottom-3 left-3 text-white">
+              <p>
+                {categories[0].name}
+              </p>
+              <p>{categories[0].description}</p>
+            </div>
+          </Link>
+
+          {/* CENTER TOP ✅ fixed */}
+          <Link
+            to={`/products?category=${categories[1]._id}`}
+            className="bg-gray-200 rounded-xl overflow-hidden relative group h-[160px]"
+          >
+            <img
+              src={categories[1].image.url} // ✅ FIXED
+              alt={categories[1].name}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+            />
+            <div className="absolute bottom-3 left-3 text-white">
+              <p>
+                {categories[1].name}
+              </p>
+              <p>{categories[1].description}</p>
+            </div>
+          </Link>
+
+          {/* RIGHT TALL ✅ fixed */}
+          <Link
+            to={`/products?category=${categories[3]._id}`}
+            className="bg-gray-200 rounded-xl overflow-hidden relative group row-span-2 h-[340px]"
+          >
+            <img
+              src={categories[3].image.url} // ✅ FIXED
+              alt={categories[3].name}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+            />
+            <div className="absolute bottom-3 left-3 text-white">
+              <p>
+                {categories[3].name}
+              </p>
+              <p>{categories[3].description}</p>
+            </div>
+          </Link>
+
+          {/* CENTER BOTTOM ✅ fixed */}
+          <Link
+            to={`/products?category=${categories[2]._id}`}
+            className="bg-gray-200 rounded-xl overflow-hidden relative group h-[160px]"
+          >
+            <img
+              src={categories[2].image.url} // ✅ FIXED
+              alt={categories[2].name}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+            />
+            <div className="absolute bottom-3 left-3 text-white">
+              <p>
+                {categories[2].name}
+              </p>
+              <p>{categories[2].description}</p>
+            </div>
+          </Link>
+        </div>
+      )}
+
+      {/* ✅ Remaining categories grid (after 4) unchanged UI */}
+      {!loading && (
+        <div className="px-6 py-10">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {categories.slice(4).map((c) => (
+              <CategoryCard key={c._id} category={c} />
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 };

@@ -12,8 +12,8 @@ const reviewSchema = new mongoose.Schema(
 
 const sizeSchema = new mongoose.Schema(
   {
-    shirt: [{ type: String }], 
-    pant: [{ type: String }],  // e.g. 28, 30, 32 ...
+    shirt: [{ type: String }],
+    pant: [{ type: String }], // e.g. 28, 30, 32 ...
   },
   { _id: false }
 );
@@ -24,10 +24,15 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     mrp: { type: Number, required: true },
 
-    rating: { type: Number, default: 0 },  // average rating
+    rating: { type: Number, default: 0 }, // average rating
     ratings: { type: Number, default: 0 }, // total rating count if needed
 
-    category: { type: String, required: true }, // Office, Casual, Pants, Shirts, etc.
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
+    },
+    // I want linked Category
     brand: { type: String, required: true },
 
     stock: { type: Number, required: true, default: 0 },

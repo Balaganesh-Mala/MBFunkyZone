@@ -1,148 +1,125 @@
-import React, { useState } from "react";
-import { FaClock, FaRedoAlt, FaTruck, FaChevronRight, FaShoppingBag } from "react-icons/fa";
-import { IoMdCheckmarkCircleOutline } from "react-icons/io";
-import { FaBoxOpen } from "react-icons/fa";
-import { TbTruckDelivery } from "react-icons/tb";
-import { PiRepeatLight } from "react-icons/pi";
-
-const dummyOrders = [
-  ...Array.from({ length: 30 }, (_, i) => ({
-    orderNo: 2133 + i,
-    image: "https://via.placeholder.com/150",
-    items: "Office Backpack",
-    status: i % 2 === 0 ? "In Progress" : "Delivered",
-    trackingId: 276413876 + i,
-    deliveryDate: "30-11-2025 (Expected)",
-    price: 2499,
-  }))
-];
+import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
+import { Loader2 } from "lucide-react";
+import { getMyOrders } from "../api/order.api.js";
+import Button from "../components/ui/button.jsx";
 
 const Orders = () => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const PER_PAGE = 10;
 
-  const totalOrders = dummyOrders.length;
-  const totalPages = Math.ceil(totalOrders / PER_PAGE);
-
-  const start = (page - 1) * PER_PAGE;
-  const end = start + PER_PAGE;
-  const ordersToShow = dummyOrders.slice(start, end);
-
-  const handleNext = () => {
-    if (page < totalPages) setPage(page + 1);
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const res = await getMyOrders();
+      if (res.data.success) {
+        setOrders(res.data.orders || []);
+      }
+    } catch (err) {
+      console.error("Order Fetch Error:", err);
+      Swal.fire("Error", "Failed to fetch orders ❗", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <section className="min-h-screen bg-white px-3 sm:px-6 lg:px-8 py-8">
-      <div className="max-w-6xl mx-auto">
+  useEffect(() => {
+    loadOrders();
+  }, []);
 
-        {/* Header */}
-        <h1 className="text-xl sm:text-3xl font-extrabold text-gray-900 mb-6 flex items-center gap-2">
-          <FaShoppingBag /> Order History
+  const totalPages = Math.ceil(orders.length / PER_PAGE);
+  const start = (page - 1) * PER_PAGE;
+  const paginated = orders.slice(start, start + PER_PAGE);
+
+  return (
+    <main className="min-h-screen bg-white px-4 sm:px-8 py-10">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-2xl font-extrabold mb-6 uppercase tracking-wide">
+          Order History
         </h1>
 
-        {/* Table */}
-        <div className="overflow-x-auto rounded-xl border shadow-sm">
-          <table className="w-full text-left">
-
-            {/* Head */}
-            <thead className="bg-gray-400 text-white whitespace-nowrap text-xs sm:text-sm">
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="w-7 h-7 animate-spin text-black" />
+          </div>
+        ) : (
+          <table className="w-full border rounded-lg overflow-hidden text-sm">
+            <thead className="bg-gray-200 border-b">
               <tr>
-                <th className="px-3 sm:px-4 py-3">Order No</th>
-                <th className="px-4 py-3">Items</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Tracking ID</th>
-                <th className="px-4 py-3">Delivery Date</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Action</th>
+                <th className="p-3 text-left">Order No</th>
+                <th className="text-start">Items</th>
+                <th className="text-center">Payment</th>
+                <th className="text-center">Status</th>
+                <th className="text-right p-3">Total</th>
+                <th className="text-center">Action</th>
               </tr>
             </thead>
 
-            {/* Body */}
             <tbody>
-              {ordersToShow.map((order, index) => (
-                <tr key={index} className="border-b last:border-0 hover:bg-gray-50 transition text-xs sm:text-sm">
-
-                  {/* Order No */}
-                  <td className="px-3 sm:px-4 py-4 whitespace-nowrap font-semibold text-gray-900">
-                    {order.orderNo}
+              {paginated.map((o) => (
+                <tr
+                  key={o._id}
+                  className="border-b hover:bg-gray-50 transition"
+                >
+                  <td className="p-3 font-bold">
+                    {o.orderNo || o._id.slice(0, 6)}
                   </td>
 
-                  {/* Items + Image */}
-                  <td className="px-4 py-4 flex items-center gap-3 sm:gap-4 whitespace-nowrap">
-                    <img src={order.image} alt={order.items} className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg border object-cover"/>
-                    <span className="font-medium text-gray-800">{order.items}</span>
+                  <td>{o.orderItems.map((i) => i.name).join(", ")}</td>
+
+                  <td className="text-center">{o.paymentMethod}</td>
+
+                  <td className="text-center font-semibold">{o.status}</td>
+
+                  <td className="text-right p-3 font-bold">
+                    ₹{o.totalPrice.toLocaleString()}
                   </td>
 
-                  {/* Status */}
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    {order.status === "In Progress" && (
-                      <span className="flex items-center gap-1 sm:gap-2 text-yellow-600 font-semibold">
-                        <FaClock /> {order.status}
-                      </span>
-                    )}
-                    {order.status === "Delivered" && (
-                      <span className="flex items-center gap-1 sm:gap-2 text-green-600 font-semibold">
-                        <IoMdCheckmarkCircleOutline /> {order.status}
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Tracking ID */}
-                  <td className="px-4 py-4 font-mono text-gray-800 whitespace-nowrap">
-                    {order.trackingId}
-                  </td>
-
-                  {/* Delivery Date */}
-                  <td className="px-4 py-4 whitespace-nowrap text-gray-600">
-                    {order.deliveryDate}
-                  </td>
-
-                  {/* Price */}
-                  <td className="px-4 py-4 whitespace-nowrap font-bold text-gray-900">
-                    ₹{order.price.toLocaleString()}
-                  </td>
-
-                  {/* Action */}
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <button className="flex items-center justify-center gap-1 sm:gap-2 bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition font-semibold text-[10px] sm:text-xs">
-                      <FaRedoAlt /> Re-Order
+                  <td className="text-center">
+                    <button className="px-4 py-2 bg-black text-white rounded-full text-[10px] font-semibold hover:bg-gray-800 transition">
+                      Re-Order
                     </button>
                   </td>
-
                 </tr>
               ))}
+
+              {!orders.length && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="text-center text-gray-500 py-10"
+                  >
+                    No orders yet ❗
+                  </td>
+                </tr>
+              )}
             </tbody>
-
           </table>
-        </div>
+        )}
 
-        {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 pt-4 border-t text-gray-700 text-xs sm:text-sm">
-          <p className="flex items-center gap-2">
-            <FaBoxOpen /> Showing {page === 1 ? 1 : start + 1}-{Math.min(end, totalOrders)} of {totalOrders} orders
-          </p>
+        {/* Pagination */}
+        {!loading && totalPages > 1 && (
+          <footer className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+            >
+              ← Prev
+            </Button>
 
-          <button
-            onClick={handleNext}
-            disabled={page === totalPages}
-            className={`flex items-center gap-2 bg-black text-white px-6 py-2 rounded-full text-xs sm:text-sm hover:bg-gray-800 transition font-semibold ${
-              page === totalPages ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            Next <FaChevronRight />
-          </button>
-        </div>
-
-        {/* Mobile Notice */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mt-8 text-gray-500 text-[10px] sm:text-xs md:text-sm gap-4 border-t pt-5">
-          <p className="flex items-center gap-2"><FaBoxOpen /> COD Available</p>
-          <p className="flex items-center gap-2"><TbTruckDelivery /> 1-5 Days Delivery</p>
-          <p className="flex items-center gap-2"><PiRepeatLight /> 7-Day Easy Replacement</p>
-        </div>
-
+            <Button
+              disabled={page === totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              Next →
+            </Button>
+          </footer>
+        )}
       </div>
-    </section>
+    </main>
   );
 };
 

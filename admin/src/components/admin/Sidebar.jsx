@@ -12,10 +12,13 @@ import {
   Store,
   X,
   ChevronDown,
-  User
+  User,
+  Flag
 } from "lucide-react";
+
 import api from "../../services/api";
 import Swal from "sweetalert2";
+import path from "path";
 
 const Sidebar = ({ open, setOpen }) => {
   const location = useLocation();
@@ -34,6 +37,7 @@ const Sidebar = ({ open, setOpen }) => {
       try {
         const res = await api.get("/settings");
         setSettings(res.data.settings || null);
+        console.log(res.data.settings)
       } catch (err) {
         Swal.fire("Error", "Failed to load store settings ❗", "error");
       }
@@ -51,7 +55,9 @@ const Sidebar = ({ open, setOpen }) => {
     { label: "Categories", icon: <List size={18} />, path: "/admin/categories" },
     { label: "Orders", icon: <ShoppingCart size={18} />, path: "/admin/orders" },
     { label: "Users", icon: <Users size={18} />, path: "/admin/users" },
+    {label: "Banner",icon: <Flag size={18} />, path:"/admin/banner" },
     { label: "Settings", icon: <Settings size={18} />, path: "/admin/settings" },
+    
   ];
 
   return (
@@ -101,15 +107,15 @@ const Sidebar = ({ open, setOpen }) => {
           >
             <div className="flex items-center gap-3">
               <User className="w-6 h-6" />
-              <span className="text-sm">{admin.name}</span>
+              <span className="text-sm">Profile</span>
             </div>
             <ChevronDown size={18} className={`${showProfile ? "rotate-180" : ""} transition`} />
           </button>
 
           {showProfile && (
             <div className="absolute bottom-16 left-4 w-[210px] bg-[#141a2c] p-3 rounded-xl shadow-xl border border-gray-700">
-              <p className="text-sm font-semibold">{admin.name}</p>
-              <p className="text-xs text-gray-300">{admin.email}</p>
+              <p className="text-sm font-semibold">{settings.storeName}</p>
+              <p className="text-xs text-gray-300">{settings.supportEmail}</p>
 
               <button
                 onClick={doLogout}

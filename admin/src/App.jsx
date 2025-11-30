@@ -3,6 +3,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
+import HomePage from "./pages/admin/HomePage ";
 
 import AdminLayout from "./components/layout/AdminLayout";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -14,6 +15,7 @@ import SettingsManager from "./pages/admin/SettingsManager";
 import AddProduct from "./pages/admin/AddProduct";
 import EditProduct from "./pages/admin/EditProduct";
 import UserManagement from "./pages/admin/UserManagement";
+import BannerManagement from "./pages/admin/BannerManagement";
 
 // import your existing shop pages here...
 
@@ -22,7 +24,7 @@ const App = () => {
     <AdminAuthProvider>
       <Routes>
         {/* Public shop routes... */}
-        {/* <Route path="/" element={<HomePage />} /> */}
+         <Route path="/" element={<HomePage />} />
         {/* <Route path="/product/:id" element={<ProductDetails />} /> */}
         {/* etc... */}
 
@@ -45,6 +47,7 @@ const App = () => {
           <Route path="categories" element={<CategoryManager />} />
           <Route path="orders" element={<OrdersManager />} />
           <Route path="users" element={<UserManagement/>}/>
+          <Route path="banner" element={<BannerManagement/>}/>
           <Route path="settings" element={<SettingsManager />} />
         </Route>
       </Routes>

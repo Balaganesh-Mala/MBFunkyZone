@@ -44,15 +44,18 @@ const EditProduct = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.get("/api/categories");
+        const res = await api.get("/categories");
+        console.log("Category API response:", res.data);
+
+        // Extract the array safely
         setCategories(res.data.categories || []);
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error("Failed to load categories:", err);
+        Swal.fire("Error", "Failed to load categories ❗", "error");
       }
     })();
   }, []);
 
-  // Load product
   const loadProduct = async () => {
     try {
       setLoading(true);
@@ -63,7 +66,7 @@ const EditProduct = () => {
         name: p.name || "",
         price: p.price || "",
         mrp: p.mrp || "",
-        category: p.category || "",
+        category: p.category?._id || p.category || "", // ✅ accept both object or id
         brand: p.brand || "",
         stock: p.stock || "",
         description: p.description || "",
@@ -73,7 +76,6 @@ const EditProduct = () => {
         sizes: p.sizes || { shirt: [], pant: [] },
       });
 
-      // Expect p.images to be an array of urls (length maybe 4). Normalize to 4 slots.
       const imgs = Array.isArray(p.images) ? p.images.slice(0, 4) : [];
       while (imgs.length < 4) imgs.push("");
       setImagePreviews(imgs);
@@ -106,7 +108,10 @@ const EditProduct = () => {
       ...prev,
       sizes: {
         ...prev.sizes,
-        [type]: value.split(",").map((s) => s.trim()).filter(Boolean),
+        [type]: value
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
       },
     }));
   };
@@ -138,7 +143,11 @@ const EditProduct = () => {
 
     // require 4 image URLs (either kept or newly uploaded)
     if (imagePreviews.some((p) => !p)) {
-      Swal.fire("Error", "Please provide 4 images before updating ❗", "warning");
+      Swal.fire(
+        "Error",
+        "Please provide 4 images before updating ❗",
+        "warning"
+      );
       setStep(2);
       return;
     }
@@ -171,11 +180,15 @@ const EditProduct = () => {
 
       await api.put(`/products/${id}`, payload);
 
-      Swal.fire("Updated!", "Product updated ✅", "success");
+      Swal.fire("Updated!", "Product updated", "success");
       navigate("/admin/products");
     } catch (err) {
       console.error("Update Error:", err);
-      Swal.fire("Error", err?.response?.data?.message || "Update failed ❗", "error");
+      Swal.fire(
+        "Error",
+        err?.response?.data?.message || "Update failed ❗",
+        "error"
+      );
     } finally {
       setUpdating(false);
     }
@@ -194,7 +207,9 @@ const EditProduct = () => {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-xl">←</button>
+          <button onClick={() => navigate(-1)} className="text-xl">
+            ←
+          </button>
           <h1 className="text-xl md:text-2xl font-bold">Edit Product</h1>
         </div>
         <Button variant="outline" onClick={() => navigate("/admin/products")}>
@@ -204,64 +219,103 @@ const EditProduct = () => {
 
       {/* Step navigator */}
       <div className="flex gap-2 flex-wrap text-xs md:text-sm">
-        {["Product Info", "Upload Images", "Sizes", "Review & Submit"].map((label, i) => (
-          <div
-            key={i}
-            onClick={() => setStep(i + 1)}
-            className={`px-3 py-1.5 rounded-full border cursor-pointer transition ${
-              step === i + 1 ? "bg-black text-white" : "bg-white text-gray-600"
-            }`}
-          >
-            {label}
-          </div>
-        ))}
+        {["Product Info", "Upload Images", "Sizes", "Review & Submit"].map(
+          (label, i) => (
+            <div
+              key={i}
+              onClick={() => setStep(i + 1)}
+              className={`px-3 py-1.5 rounded-full border cursor-pointer transition ${
+                step === i + 1
+                  ? "bg-black text-white"
+                  : "bg-white text-gray-600"
+              }`}
+            >
+              {label}
+            </div>
+          )
+        )}
       </div>
 
       <Card>
         <CardContent className="p-5 md:p-7">
           <form onSubmit={handleSubmit} className="space-y-5">
-
             {/* STEP 1 — Product Info */}
             {step === 1 && (
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label>Product Name *</Label>
-                  <Input name="name" value={form.name} onChange={handleChange} required />
+                  <Input
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
 
                 <div>
                   <Label>Category *</Label>
-                  <Input
+                  <select
                     name="category"
                     value={form.category}
-                    onChange={handleChange}
-                    list="categoryList"
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, category: e.target.value }))
+                    }
                     required
-                  />
-                  <datalist id="categoryList">
-                    {categories.map((c) => <option key={c._id} value={c.name} />)}
-                  </datalist>
+                    className="w-full border rounded-2xl p-2 text-sm"
+                  >
+                    <option value="" disabled>
+                      Select a category
+                    </option>
+                    {categories.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <Label>Brand *</Label>
-                  <Input name="brand" value={form.brand} onChange={handleChange} required />
+                  <Input
+                    name="brand"
+                    value={form.brand}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <Label>Price *</Label>
-                    <Input type="number" name="price" value={form.price} onChange={handleChange} required />
+                    <Input
+                      type="number"
+                      name="price"
+                      value={form.price}
+                      onChange={handleChange}
+                      required
+                    />
                   </div>
                   <div>
                     <Label>MRP *</Label>
-                    <Input type="number" name="mrp" value={form.mrp} onChange={handleChange} required />
+                    <Input
+                      type="number"
+                      name="mrp"
+                      value={form.mrp}
+                      onChange={handleChange}
+                      required
+                    />
                   </div>
                 </div>
 
                 <div>
                   <Label>Stock *</Label>
-                  <Input type="number" name="stock" value={form.stock} onChange={handleChange} required />
+                  <Input
+                    type="number"
+                    name="stock"
+                    value={form.stock}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
 
                 <div>
@@ -275,7 +329,9 @@ const EditProduct = () => {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button type="button" onClick={() => setStep(2)}>Next →</Button>
+                  <Button type="button" onClick={() => setStep(2)}>
+                    Next →
+                  </Button>
                 </div>
               </div>
             )}
@@ -293,7 +349,11 @@ const EditProduct = () => {
                       className="relative w-full aspect-square border-2 rounded-2xl flex items-center justify-center overflow-hidden bg-gray-50 cursor-pointer hover:border-gray-400 transition"
                     >
                       {prev ? (
-                        <img src={prev} alt={`preview-${i}`} className="w-full h-full object-cover" />
+                        <img
+                          src={prev}
+                          alt={`preview-${i}`}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <ImagePlus className="w-7 h-7 text-gray-400" />
                       )}
@@ -313,8 +373,16 @@ const EditProduct = () => {
                 </p>
 
                 <div className="flex justify-between pt-5">
-                  <Button type="button" variant="outline" onClick={() => setStep(1)}>← Back</Button>
-                  <Button type="button" onClick={() => setStep(3)}>Next →</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                  >
+                    ← Back
+                  </Button>
+                  <Button type="button" onClick={() => setStep(3)}>
+                    Next →
+                  </Button>
                 </div>
               </div>
             )}
@@ -341,7 +409,9 @@ const EditProduct = () => {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button type="button" onClick={() => setStep(4)}>Next →</Button>
+                  <Button type="button" onClick={() => setStep(4)}>
+                    Next →
+                  </Button>
                 </div>
               </div>
             )}
@@ -352,25 +422,44 @@ const EditProduct = () => {
                 <div className="flex flex-col gap-3">
                   <div className="flex justify-between border p-2 rounded">
                     <Label>Featured</Label>
-                    <Switch checked={form.isFeatured} onCheckedChange={(val) => handleToggle("isFeatured", val)} />
+                    <Switch
+                      checked={form.isFeatured}
+                      onCheckedChange={(val) => handleToggle("isFeatured", val)}
+                    />
                   </div>
 
                   <div className="flex justify-between border p-2 rounded">
                     <Label>Best Seller</Label>
-                    <Switch checked={form.isBestSeller} onCheckedChange={(val) => handleToggle("isBestSeller", val)} />
+                    <Switch
+                      checked={form.isBestSeller}
+                      onCheckedChange={(val) =>
+                        handleToggle("isBestSeller", val)
+                      }
+                    />
                   </div>
 
                   <div className="flex justify-between border p-2 rounded">
                     <Label>Active</Label>
-                    <Switch checked={form.isActive} onCheckedChange={(val) => handleToggle("isActive", val)} />
+                    <Switch
+                      checked={form.isActive}
+                      onCheckedChange={(val) => handleToggle("isActive", val)}
+                    />
                   </div>
                 </div>
 
                 <div className="text-center space-y-4 py-6">
-                  <h2 className="text-lg md:text-xl font-bold">Review & Update</h2>
+                  <h2 className="text-lg md:text-xl font-bold">
+                    Review & Update
+                  </h2>
 
                   <div className="flex justify-center gap-2 flex-wrap">
-                    <Button variant="outline" type="button" onClick={() => setStep(3)}>← Back</Button>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => setStep(3)}
+                    >
+                      ← Back
+                    </Button>
 
                     <Button type="submit" disabled={updating}>
                       {updating ? (
@@ -386,7 +475,6 @@ const EditProduct = () => {
                 </div>
               </div>
             )}
-
           </form>
         </CardContent>
       </Card>
