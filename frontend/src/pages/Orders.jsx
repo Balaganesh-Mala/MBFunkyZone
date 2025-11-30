@@ -19,7 +19,7 @@ const Orders = () => {
       }
     } catch (err) {
       console.error("Order Fetch Error:", err);
-      Swal.fire("Error", "Failed to fetch orders ❗", "error");
+      Swal.fire("Error ", "Failed to fetch orders ", "error");
     } finally {
       setLoading(false);
     }
@@ -41,62 +41,77 @@ const Orders = () => {
         </h1>
 
         {loading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="w-7 h-7 animate-spin text-black" />
+          <div className="flex justify-center py-10 text-gray-500">
+            <Loader2 className="w-7 h-7 animate-spin" />
           </div>
         ) : (
-          <table className="w-full border rounded-lg overflow-hidden text-sm">
-            <thead className="bg-gray-200 border-b">
-              <tr>
-                <th className="p-3 text-left">Order No</th>
-                <th className="text-start">Items</th>
-                <th className="text-center">Payment</th>
-                <th className="text-center">Status</th>
-                <th className="text-right p-3">Total</th>
-                <th className="text-center">Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {paginated.map((o) => (
-                <tr
-                  key={o._id}
-                  className="border-b hover:bg-gray-50 transition"
-                >
-                  <td className="p-3 font-bold">
-                    {o.orderNo || o._id.slice(0, 6)}
-                  </td>
-
-                  <td>{o.orderItems.map((i) => i.name).join(", ")}</td>
-
-                  <td className="text-center">{o.paymentMethod}</td>
-
-                  <td className="text-center font-semibold">{o.status}</td>
-
-                  <td className="text-right p-3 font-bold">
-                    ₹{o.totalPrice.toLocaleString()}
-                  </td>
-
-                  <td className="text-center">
-                    <button className="px-4 py-2 bg-black text-white rounded-full text-[10px] font-semibold hover:bg-gray-800 transition">
-                      Re-Order
-                    </button>
-                  </td>
-                </tr>
-              ))}
-
-              {!orders.length && (
+          <div className="overflow-x-auto">
+            <table className="w-full border rounded-xl text-sm">
+              <thead className="bg-gray-100 border-b">
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="text-center text-gray-500 py-10"
-                  >
-                    No orders yet ❗
-                  </td>
+                  <th className="p-3 text-left">Order No</th>
+                  <th className="p-3 text-left">Items</th>
+                  <th className="p-3 text-center">Payment</th>
+                  <th className="p-3 text-center">Status</th>
+                  <th className="p-3 text-right">Total</th>
+                  <th className="p-3 text-center">Action</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+                {!orders.length && (
+                  <tr>
+                    <td colSpan={6} className="text-center text-gray-400 py-10">
+                      No orders yet ❗
+                    </td>
+                  </tr>
+                )}
+
+                {paginated.map((o) => (
+                  <tr key={o._id} className="border-b hover:bg-gray-50 transition">
+
+                    {/* Order No */}
+                    <td className="p-3 font-bold">
+                      {o.orderNo || o._id.slice(0, 6)}
+                    </td>
+
+                    {/* Items names */}
+                    <td className="p-3 text-xs sm:text-sm text-gray-800">
+                      {o.orderItems?.map((i) => i.name).join(", ") || ""}
+                    </td>
+
+                    {/* Payment Method */}
+                    <td className="p-3 text-center font-semibold text-gray-700">
+                      {o.paymentMethod}
+                    </td>
+
+                    {/* Order Status */}
+                    <td className="p-3 text-center font-semibold text-gray-700">
+                      {o.orderStatus} {/* ✅ fixed from .status to .orderStatus */}
+                    </td>
+
+                    {/* Total Price */}
+                    <td className="p-3 text-right font-bold">
+                      ₹{(o.totalPrice || 0).toLocaleString()} {/* ✅ fixed from totalPrice */}
+                    </td>
+
+                    {/* Action Buttons */}
+                    <td className="p-3 text-center">
+                      <button
+                        onClick={() =>
+                          Swal.fire("Feature Soon", "Re-Order feature coming soon", "info")
+                        }
+                        className="px-4 py-2 bg-black text-white rounded-full text-[10px] font-semibold hover:bg-gray-800 transition"
+                      >
+                        Re-Order
+                      </button>
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {/* Pagination */}

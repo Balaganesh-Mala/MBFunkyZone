@@ -19,7 +19,7 @@ import api from "../api/axios.js"; // ✅ axios using env already
 
 const ProductDetails = () => {
   const { id } = useParams();
-  const { addToCart } = useCart();
+  const { addToCartBackend } = useCart();
   const navigate = useNavigate();
 
   const [product, setProduct] = useState(null);
@@ -43,7 +43,7 @@ const ProductDetails = () => {
   useEffect(() => {
     (async () => {
       if (!id || id === "undefined") {
-        Swal.fire("Error", "Invalid Product ID ❗", "error");
+        Swal.fire("Error", "Invalid Product ID", "error");
         return navigate("/shop");
       }
 
@@ -57,7 +57,7 @@ const ProductDetails = () => {
         setSelectedImg(p.images?.[0] || "");
       } catch (err) {
         console.error("Load Error:", err);
-        Swal.fire("Error", "Failed to load product ❗", "error");
+        Swal.fire("Error", "Failed to load product", "error");
         navigate("/shop");
       } finally {
         setLoading(false);
@@ -69,7 +69,10 @@ const ProductDetails = () => {
   useEffect(() => {
     if (product) {
       const viewed = JSON.parse(localStorage.getItem("recentlyViewed")) || [];
-      const updated = [product._id, ...viewed.filter(v => v !== product._id)].slice(0, 10);
+      const updated = [
+        product._id,
+        ...viewed.filter((v) => v !== product._id),
+      ].slice(0, 10);
       localStorage.setItem("recentlyViewed", JSON.stringify(updated));
     }
   }, [product]);
@@ -85,9 +88,7 @@ const ProductDetails = () => {
             params: { category: product.category._id },
           });
 
-          const sp = res.data.products
-            ?.filter(p => p._id !== id)
-            .slice(0, 5); // keep only 5
+          const sp = res.data.products?.filter((p) => p._id !== id).slice(0, 5); // keep only 5
 
           setSimilar(sp || []);
         }
@@ -117,7 +118,6 @@ const ProductDetails = () => {
 
   return (
     <div className="w-full bg-white">
-
       {/* Back Button UI untouched */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <button
@@ -130,7 +130,6 @@ const ProductDetails = () => {
 
       {/* MAIN SECTION UI preserved */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-
         {/* IMAGE GALLERY UI preserved, only using real DB data */}
         <div className="flex flex-col sm:flex-row lg:flex-row gap-4">
           <div className="flex sm:flex-row lg:flex-col gap-3 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0">
@@ -170,12 +169,16 @@ const ProductDetails = () => {
 
           {/* PRICE & RATING UI preserved */}
           <div className="flex items-center flex-wrap gap-2 text-sm sm:text-lg">
-            <p className="font-bold text-lg text-black">₹{product.price?.toLocaleString()}</p>
+            <p className="font-bold text-lg text-black">
+              ₹{product.price?.toLocaleString()}
+            </p>
             <span className="text-gray-400">|</span>
             <div className="flex items-center gap-1 text-orange-500 font-semibold text-lg">
               <FaStar /> {product.rating}
             </div>
-            <span className="text-xs sm:text-sm text-gray-500">({product.reviews.length} Reviews)</span>
+            <span className="text-xs sm:text-sm text-gray-500">
+              ({product.reviews.length} Reviews)
+            </span>
           </div>
 
           <hr className="border-gray-200" />
@@ -193,14 +196,21 @@ const ProductDetails = () => {
 
           {/* SIZE selector UI preserved */}
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase mb-2">Select Size:</p>
+            <p className="text-xs font-bold text-gray-500 uppercase mb-2">
+              Select Size:
+            </p>
             <div className="flex flex-wrap gap-2">
-              {[...(product.sizes?.shirt || []), ...(product.sizes?.pant || [])].map(s => (
+              {[
+                ...(product.sizes?.shirt || []),
+                ...(product.sizes?.pant || []),
+              ].map((s) => (
                 <button
                   key={s}
                   onClick={() => setSize(s)}
                   className={`px-4 py-2 rounded-full border text-xs font-semibold transition ${
-                    size === s ? "bg-black text-white border-black" : "text-gray-800 hover:border-black"
+                    size === s
+                      ? "bg-black text-white border-black"
+                      : "text-gray-800 hover:border-black"
                   }`}
                 >
                   {s}
@@ -212,61 +222,78 @@ const ProductDetails = () => {
           {/* QUANTITY + ADD TO CART UI preserved */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-4 border w-fit px-4 py-2 rounded-full bg-gray-50">
-              <button onClick={() => setQty(q => Math.max(1, q - 1))} className="text-sm">−</button>
-              <span className="text-xs sm:text-sm min-w-[20px] text-center">{qty}</span>
-              <button onClick={() => setQty(q => q + 1)} className="text-sm">+</button>
+              <button
+                onClick={() => setQty((q) => Math.max(1, q - 1))}
+                className="text-sm"
+              >
+                −
+              </button>
+              <span className="text-xs sm:text-sm min-w-[20px] text-center">
+                {qty}
+              </span>
+              <button onClick={() => setQty((q) => q + 1)} className="text-sm">
+                +
+              </button>
             </div>
 
             <button
-              onClick={() => {
-                addToCart({ ...product, qty });
-                Swal.fire({
-                  icon: "success",
-                  title: "Added to Cart",
-                  text: `${product.name} added successfully ✅`,
-                  showConfirmButton: false,
-                  timer: 1500,
-                  toast: true,
-                  position: "top-end",
-                });
+              onClick={async () => {
+                const data = await addToCartBackend(product._id, qty);
+                if (data.success) {
+                  Swal.fire(
+                    "Added",
+                    `${product.name} added to cart`,
+                    "success"
+                  );
+                }
               }}
-              className="flex items-center justify-center gap-2 flex-1 bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 transition text-xs sm:text-sm"
+              className="flex items-center justify-center gap-2 flex-1 bg-black text-white py-3 rounded-full"
             >
               <FaShoppingCart /> Add to Cart
             </button>
           </div>
 
           {/* Buy Now UI preserved */}
-          <button className="w-full border border-gray-300 py-3 rounded-full font-semibold hover:border-black transition text-gray-900 text-xs sm:text-sm">
+          <button
+            onClick={() => {
+              addToCartBackend(product._id, qty);
+              navigate("/checkout");
+            }}
+            className="w-full border border-gray-300 py-3 rounded-full font-semibold hover:border-black transition text-xs sm:text-sm"
+          >
             Buy Now
           </button>
 
           {/* BOTTOM ICONS UI preserved */}
           <div className="text-xs text-gray-500 border-t pt-3 space-y-1">
-            <p className="flex items-center gap-2"><TbTruckDelivery /> Free Delivery Available</p>
-            <p className="flex items-center gap-2"><PiRepeatLight /> 7-Day Easy Replacement</p>
+            <p className="flex items-center gap-2">
+              <TbTruckDelivery /> Free Delivery Available
+            </p>
+            <p className="flex items-center gap-2">
+              <PiRepeatLight /> 7-Day Easy Replacement
+            </p>
           </div>
 
           {/* Show linked category name if needed anywhere */}
           <p className="text-xs sm:text-sm text-gray-600">
             Category: <strong>{product.category?.name}</strong>
           </p>
-
         </div>
       </div>
 
       {/* SIMILAR PRODUCT SECTION UI preserved, only data source fixed */}
       {similar.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10 border-t">
-          <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-5">Similar Products</h2>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-5">
+            Similar Products
+          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-            {similar.map(p => (
+            {similar.map((p) => (
               <ProductCard key={p._id} product={p} />
             ))}
           </div>
         </section>
       )}
-
     </div>
   );
 };

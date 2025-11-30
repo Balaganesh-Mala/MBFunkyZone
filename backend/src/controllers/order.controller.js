@@ -43,32 +43,38 @@ const validateOrderItems = async (items) => {
 // 🛒 Place Order (Checkout API)
 //
 export const placeOrder = asyncHandler(async (req, res) => {
-  const { orderItems, shippingAddress, paymentMethod } = req.body;
+  const { orderItems, shippingAddress, paymentMethod, shippingPrice } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
     return res.status(400).json({ success:false, message: "Cart is empty ❌" });
   }
 
-  // Validate product stock and calculate price
+  // Validate product stock and calculate total
   const { validatedItems, itemsPrice } = await validateOrderItems(orderItems);
 
-  const totalPrice = itemsPrice + (req.body.shippingPrice || 0);
+  const totalPrice = itemsPrice + (shippingPrice || 0);
 
-  // Create order and reduce stock in a Mongo transaction
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
 
     const order = await Order.create([{
-      user: req.user?.id || null,  // supports guest checkout
+      user: req.user?._id || null, // ✅ store correct logged user ID
       orderItems: validatedItems,
-      shippingAddress,
+      shippingAddress: {
+        name:shippingAddress.name,
+        street:shippingAddress.street,
+        city:shippingAddress.city,
+        state:shippingAddress.state,
+        pincode:shippingAddress.pincode,
+        phone:shippingAddress.phone
+      },
       itemsPrice,
-      shippingPrice: req.body.shippingPrice || 0,
+      shippingPrice: shippingPrice || 0,
       totalPrice,
-      paymentMethod,
-      paymentStatus: paymentMethod === "online" ? "Pending" : "Pending",
-      orderStatus: "Processing",
+      paymentMethod: paymentMethod === "online" ? "online" : "COD", // ✅ store correct enum value
+      paymentStatus: "Pending",
+      orderStatus: "Processing"
     }], { session });
 
     // Reduce stock
@@ -93,11 +99,12 @@ export const placeOrder = asyncHandler(async (req, res) => {
   }
 });
 
+
 //
 // 📦 Get My Orders (Orders Page - User)
 //
 export const getMyOrders = asyncHandler(async (req, res) => {
-  const orders = await Order.find({ user: req.user?.id }).sort({ createdAt: -1 });
+  const orders = await Order.find({ user: req.user?._id }).sort({ createdAt: -1 }); // ✅ FIXED
   res.status(200).json({ success: true, orders });
 });
 
