@@ -31,3 +31,15 @@ export const deleteProduct = async (id) => {
   const res = await api.delete(`/products/${id}`);
   return res.data;
 };
+
+
+export const getReviewsByProduct = async (id) => {
+  const res = await api.get(`/products/${id}/reviews`);
+  return res.data;
+};
+
+// ✅ Post a new review (login only)
+export const postReviewByProduct = async (id, data) => {
+  const res = await api.post(`/products/${id}/review`, data);
+  return res.data;
+};

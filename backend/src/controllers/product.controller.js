@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Product from "../models/product.model.js";
 import Category from "../models/category.model.js";
+import asyncHandler from "express-async-handler";
 import { uploadToCloudinary as uploadMultipleToCloudinary } from "../middleware/upload.middleware.js";
 
 export const createProduct = async (req, res) => {
@@ -201,3 +202,44 @@ export const deleteProduct = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+export const addProductReview = asyncHandler(async (req, res) => {
+  const { rating, comment } = req.body;
+  const userName = req.user?.name;
+
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    return res.status(404).json({ success:false, message:"Product not found" });
+  }
+
+  product.reviews.push({
+    name: userName,
+    rating: Number(rating),
+    comment,
+  });
+
+  // update average rating
+  const allReviews = product.reviews; // ✅ correct field
+const totalReviews = allReviews.length;
+const avgRating =
+  allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
+
+product.rating = avgRating; // ✅ store average rating
+await product.save();
+
+
+  product.rating = avgRating;
+  await product.save();
+
+  res.status(201).json({ success:true, message:"Review added ✅", product });
+});
+
+// ⭐ Get product reviews (public)
+export const getProductReviews = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id, "reviews rating");
+  if (!product) {
+    return res.status(404).json({ success:false, message:"Product not found" });
+  }
+  res.status(200).json({ success:true, reviews: product.reviews, rating: product.rating });
+});

@@ -4,7 +4,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const OrdersManager = () => {
   const [orders, setOrders] = useState([]);
@@ -15,6 +21,7 @@ const OrdersManager = () => {
     try {
       const res = await api.get("/orders");
       setOrders(res.data.orders || res.data || []);
+      console.log(res.data.orders);
     } catch (err) {
       console.error("Orders fetch error", err);
       Swal.fire("Error", "Failed to load orders", "error");
@@ -111,9 +118,10 @@ const OrdersManager = () => {
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center p-4">
           <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg p-4 space-y-4">
-
             <div className="flex justify-between items-center border-b pb-2">
-              <h3 className="font-semibold text-lg">Order #{selectedOrder.orderNo}</h3>
+              <h3 className="font-semibold text-lg">
+                Order #{selectedOrder.orderNo}
+              </h3>
               <button
                 onClick={() => setSelectedOrder(null)}
                 className="text-gray-500 text-xl hover:text-red-500"
@@ -130,6 +138,7 @@ const OrdersManager = () => {
             </div>
 
             {/* Shipping Address */}
+            {/* Shipping Address */}
             <div className="bg-gray-50 p-2 rounded-xl">
               <p className="font-semibold">Shipping Address:</p>
               <p>{selectedOrder.shippingAddress?.name}</p>
@@ -139,7 +148,7 @@ const OrdersManager = () => {
                 {selectedOrder.shippingAddress?.state} -
                 {selectedOrder.shippingAddress?.pincode}
               </p>
-              <p> {selectedOrder.shippingAddress?.phone}</p>
+              <p>{selectedOrder.shippingAddress?.phone}</p>
             </div>
 
             {/* Payment */}
@@ -155,7 +164,10 @@ const OrdersManager = () => {
               <p className="font-semibold">Order Items:</p>
               <div className="max-h-40 overflow-y-auto border rounded-xl">
                 {selectedOrder.orderItems?.map((item, i) => (
-                  <div key={i} className="flex gap-2 p-2 border-b last:border-0">
+                  <div
+                    key={i}
+                    className="flex gap-2 p-2 border-b last:border-0"
+                  >
                     <img
                       src={item.image}
                       className="w-12 h-12 object-cover rounded-lg"
@@ -163,7 +175,9 @@ const OrdersManager = () => {
                     />
                     <div>
                       <p>{item.name}</p>
-                      <p className="text-xs">₹{item.price} × {item.quantity}</p>
+                      <p className="text-xs">
+                        ₹{item.price} × {item.quantity}
+                      </p>
                       {item.size && <Badge size="sm">Size: {item.size}</Badge>}
                     </div>
                   </div>
@@ -174,9 +188,7 @@ const OrdersManager = () => {
             {/* Status Update */}
             <div>
               <p className="font-semibold mb-1">Update Status:</p>
-              <Select
-                onValueChange={(v) => updateStatus(selectedOrder._id, v)}
-              >
+              <Select onValueChange={(v) => updateStatus(selectedOrder._id, v)}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
@@ -190,9 +202,10 @@ const OrdersManager = () => {
             </div>
 
             {statusUpdating && (
-              <p className="text-sm text-gray-500 animate-pulse">Updating status...</p>
+              <p className="text-sm text-gray-500 animate-pulse">
+                Updating status...
+              </p>
             )}
-
           </div>
         </div>
       )}

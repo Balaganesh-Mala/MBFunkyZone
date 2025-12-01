@@ -1,7 +1,14 @@
 import React, { createContext, useContext, useState } from "react";
-import { apiAddToCart, apiGetUserCart, apiUpdateCartItem, apiRemoveFromCart, apiClearCart } from "../api/cart.api.js";
+import {
+  apiAddToCart,
+  apiGetUserCart,
+  apiUpdateCartItem,
+  apiRemoveFromCart,
+  apiClearCart,
+} from "../api/cart.api.js";
 
 const CartContext = createContext();
+const token = localStorage.getItem("token"); // or your auth token key
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
@@ -14,8 +21,18 @@ export const CartProvider = ({ children }) => {
   };
 
   // ✅ Add to cart using backend API
-  const addToCartBackend = async (productId, quantity = 1) => {
-    const res = await apiAddToCart(productId, quantity);
+  const addToCartBackend = async (productId, quantity = 1, size = "") => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      Swal.fire(
+        "Login Required",
+        "Please login to continue",
+        "warning"
+      ).then(() => navigate("/login"));
+      return { success: false };
+    }
+
+    const res = await apiAddToCart(productId, quantity, size); // include size
     setCartItems(res.data.cart.items);
     return res.data;
   };
@@ -43,7 +60,15 @@ export const CartProvider = ({ children }) => {
 
   return (
     <CartContext.Provider
-      value={{ cartItems, setCartItems, fetchCart, addToCartBackend, updateQtyBackend, removeItemBackend, clearCartBackend }}
+      value={{
+        cartItems,
+        setCartItems,
+        fetchCart,
+        addToCartBackend,
+        updateQtyBackend,
+        removeItemBackend,
+        clearCartBackend,
+      }}
     >
       {children}
     </CartContext.Provider>

@@ -26,15 +26,14 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(true);
 
   const [selectedImg, setSelectedImg] = useState("");
-  const [size, setSize] = useState("M");
+  const [size, setSize] = useState("");
   const [qty, setQty] = useState(1);
   const [liked, setLiked] = useState(false);
+  const [reviews, setReviews] = useState([]);
   const [tab, setTab] = useState("description");
   const [review, setReview] = useState({
-    name: "",
-    email: "",
-    message: "",
     rating: 0,
+    comment: "",
   });
 
   const stars = [1, 2, 3, 4, 5];
@@ -64,6 +63,32 @@ const ProductDetails = () => {
       }
     })();
   }, [id]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get(`/products/${id}/reviews`);
+        if (res.data.success) {
+          setReviews(res.data.reviews);
+        }
+      } catch (err) {
+        console.error("Reviews load error:", err);
+      }
+    })();
+  }, [id]);
+
+  useEffect(() => {
+    if (product?.sizes) {
+      const shirtSizes = product.sizes.shirt || [];
+      const pantSizes = product.sizes.pant || [];
+
+      if (pantSizes.length > 0) {
+        setSize(pantSizes[0]); // first pant size default
+      } else if (shirtSizes.length > 0) {
+        setSize(shirtSizes[0]); // otherwise shirt size default
+      }
+    }
+  }, [product]);
 
   // ✅ Save recently viewed product (_id)
   useEffect(() => {
@@ -113,6 +138,40 @@ const ProductDetails = () => {
       </div>
     );
   }
+
+  const handleReviewSubmit = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      return Swal.fire(
+        "Login Required",
+        "Please login to post a review",
+        "warning"
+      ).then(() => navigate("/login"));
+    }
+
+    if (review.rating === 0) {
+      return Swal.fire("Rating Required ⭐", "Please give rating", "warning");
+    }
+
+    try {
+      setLoading(true);
+      const res = await api.post(`/products/${id}/review`, {
+        // ✅ POST not PUT
+        rating: review.rating,
+        comment: review.comment, // ✅ correct key
+      });
+
+      if (res.data.success) {
+        Swal.fire("Thank You", "Your review has been posted", "success");
+        setReview({ name: "", email: "", comment: "", rating: 0 });
+        setReviews(res.data.product.reviews); // update list instantly
+      }
+    } catch (err) {
+      Swal.fire("Error", "Failed to post review ❗", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ❗ SimilarProducts should come from `similar` state now, dummy removed
 
@@ -238,13 +297,31 @@ const ProductDetails = () => {
 
             <button
               onClick={async () => {
-                const data = await addToCartBackend(product._id, qty);
+                const token = localStorage.getItem("token");
+                if (!token) {
+                  return Swal.fire(
+                    "Login Required",
+                    "Please login to add product to cart",
+                    "warning"
+                  ).then(() => navigate("/login"));
+                }
+
+                if (!size) {
+                  return Swal.fire(
+                    "Size Required",
+                    "Please select a size",
+                    "warning"
+                  );
+                }
+
+                const data = await addToCartBackend(product._id, qty, size); // pass size also
+
                 if (data.success) {
                   Swal.fire(
                     "Added",
                     `${product.name} added to cart`,
                     "success"
-                  );
+                  ).then(() => navigate("/cart")); // navigate to cart after login
                 }
               }}
               className="flex items-center justify-center gap-2 flex-1 bg-black text-white py-3 rounded-full"
@@ -255,9 +332,32 @@ const ProductDetails = () => {
 
           {/* Buy Now UI preserved */}
           <button
-            onClick={() => {
-              addToCartBackend(product._id, qty);
-              navigate("/checkout");
+            onClick={async () => {
+              const token = localStorage.getItem("token");
+              if (!token) {
+                return Swal.fire(
+                  "Login Required",
+                  "Please login to buy product",
+                  "warning"
+                ).then(() => navigate("/login"));
+              }
+
+              if (!size) {
+                return Swal.fire(
+                  "Size Required",
+                  "Please select a size",
+                  "warning"
+                );
+              }
+
+              const data = await addToCartBackend(product._id, qty, size);
+              if (data.success) {
+                navigate("/checkout");
+              }
+
+              if (data.success) {
+                navigate("/checkout");
+              }
             }}
             className="w-full border border-gray-300 py-3 rounded-full font-semibold hover:border-black transition text-xs sm:text-sm"
           >
@@ -294,6 +394,90 @@ const ProductDetails = () => {
           </div>
         </section>
       )}
+
+      <section className="max-w-7xl mx-auto px-4 py-8 border-t mt-8">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-6">
+          Customer Reviews <span className="text-yellow-500">★</span>
+        </h2>
+
+        {/* Reviews List */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {reviews.length === 0 && (
+            <p className="text-sm text-gray-400 col-span-full text-center py-10">
+              No reviews yet 😕 Be the first one!
+            </p>
+          )}
+
+          {reviews.map((r, i) => (
+            <div
+              key={i}
+              className="group bg-gray-50 border rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-[2px] transition-all"
+            >
+              <div className="flex justify-between items-center">
+                <p className="font-bold text-sm text-gray-900">{r.name}</p>
+
+                {/* Rating Stars */}
+                <div className="flex text-yellow-500 text-sm gap-[2px]">
+                  {stars.map((s) => (
+                    <FaStar
+                      key={s}
+                      className={
+                        r.rating >= s ? "text-yellow-500" : "text-gray-300"
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-[10px] text-gray-500 uppercase mt-[2px]">
+                Rating: {r.rating} / 5
+              </p>
+
+              <p className="text-xs sm:text-sm text-gray-700 mt-3 leading-relaxed">
+                {r.comment}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Add Review Form */}
+        <div className="mt-10 bg-white border rounded-2xl p-6 shadow-sm max-w-xl">
+          <h3 className="text-sm font-bold text-gray-800 uppercase mb-3 tracking-wide">
+            Write a Review ✍
+          </h3>
+
+          {/* Star Rating Input */}
+          <div className="flex gap-1 mb-4">
+            {stars.map((s) => (
+              <FaStar
+                key={s}
+                onClick={() => setReview({ ...review, rating: s })}
+                className={`cursor-pointer text-2xl transition ${
+                  review.rating >= s
+                    ? "text-yellow-500 scale-110"
+                    : "text-gray-300"
+                } hover:scale-110`}
+              />
+            ))}
+          </div>
+
+          {/* Comment Input */}
+          <textarea
+            placeholder="Share your experience about the product..."
+            value={review.comment}
+            onChange={(e) => setReview({ ...review, comment: e.target.value })}
+            className="w-full border bg-gray-50 rounded-xl p-4 text-sm h-28 outline-none focus:border-gray-400 transition"
+          />
+
+          {/* Submit Button */}
+          <button
+            onClick={handleReviewSubmit}
+            className="mt-4 bg-black text-white w-full py-3 rounded-full font-semibold hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
+          >
+            <FaShoppingCart /> Submit Review
+          </button>
+        </div>
+      </section>
     </div>
   );
 };
