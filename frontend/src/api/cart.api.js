@@ -1,7 +1,8 @@
 import api from "./axios.js";
 
-export const apiAddToCart = (productId, quantity = 1) =>
-  api.post("/cart/add", { productId, quantity });
+export const apiAddToCart = (productId, quantity = 1, size="") =>
+  api.post("/cart/add", { productId, quantity, size });  // ✅ send size
+
 
 export const apiGetUserCart = () => api.get("/cart");
 

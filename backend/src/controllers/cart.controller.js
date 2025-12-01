@@ -16,34 +16,19 @@ const calculateSubtotal = (items) => {
 // 🛒 Add item to cart
 //
 export const addToCart = asyncHandler(async (req, res) => {
-  const { productId, quantity } = req.body;
-
-  if (!productId || !quantity || quantity <= 0) {
-    res.status(400);
-    throw new Error("Valid product ID and quantity are required");
-  }
+  const { productId, quantity, size } = req.body; // ✅ take size
 
   const product = await Product.findById(productId);
-  if (!product) {
-    res.status(404);
-    throw new Error("Product not found");
-  }
-
-  if (product.stock < quantity) {
-    res.status(400);
-    throw new Error("Not enough stock available");
-  }
+  if (!product) throw new Error("Product not found");
+  if (product.stock < quantity) throw new Error("Not enough stock");
 
   let cart = await Cart.findOne({ user: req.user._id });
 
-  // If no cart exists → create one
-  if (!cart) {
-    cart = new Cart({ user: req.user._id, items: [] });
-  }
+  if (!cart) cart = new Cart({ user: req.user._id, items: [] });
 
-  // Check if already in cart
+  // ✅ Prevent merging different sizes
   const existingItem = cart.items.find(
-    (item) => item.product.toString() === productId
+    (item) => item.product.toString() === productId && item.size === size
   );
 
   if (existingItem) {
@@ -52,19 +37,17 @@ export const addToCart = asyncHandler(async (req, res) => {
     cart.items.push({
       product: productId,
       quantity,
-      price: product.price, // Store price permanently
+      price: product.price,
+      size, // ✅ STORE SIZE HERE
     });
   }
 
   cart.subtotal = calculateSubtotal(cart.items);
   await cart.save();
 
-  res.status(200).json({
-    success: true,
-    message: "Item added to cart successfully",
-    cart,
-  });
+  res.status(200).json({ success: true, cart });
 });
+
 
 //
 // 📋 Get user cart (AUTO CLEANING)

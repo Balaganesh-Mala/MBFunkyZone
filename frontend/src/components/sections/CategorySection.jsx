@@ -54,7 +54,7 @@ const CategorySection = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-14">
           {/* LEFT TALL ✅ fixed */}
           <Link
-            to={`/products?category=${categories[0]._id}`}
+            to={`/category-products?category=${categories[0]._id}`}
             className="bg-gray-200 rounded-xl overflow-hidden relative group row-span-2 h-[340px]"
           >
             <img
@@ -72,7 +72,8 @@ const CategorySection = () => {
 
           {/* CENTER TOP ✅ fixed */}
           <Link
-            to={`/products?category=${categories[1]._id}`}
+            to={`/category-products?category=${categories[1]._id}`}
+
             className="bg-gray-200 rounded-xl overflow-hidden relative group h-[160px]"
           >
             <img
@@ -90,7 +91,8 @@ const CategorySection = () => {
 
           {/* RIGHT TALL ✅ fixed */}
           <Link
-            to={`/products?category=${categories[3]._id}`}
+            to={`/category-products?category=${categories[3]._id}`}
+
             className="bg-gray-200 rounded-xl overflow-hidden relative group row-span-2 h-[340px]"
           >
             <img
@@ -108,7 +110,7 @@ const CategorySection = () => {
 
           {/* CENTER BOTTOM ✅ fixed */}
           <Link
-            to={`/products?category=${categories[2]._id}`}
+            to={`/category-products?category=${categories[0]._id}`}
             className="bg-gray-200 rounded-xl overflow-hidden relative group h-[160px]"
           >
             <img

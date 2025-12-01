@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 const CategoryCard = ({ category }) => {
   return (
     <Link
-      to={`/products?category=${category._id}`} // ✅ link with _id
+      to={`/category-products?category=${category._id}`} // ✅ link with _id
       className="block group cursor-pointer bg-white rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden border"
     >
       <img

@@ -12,6 +12,8 @@ import Contact from "../pages/Contact";
 import About from "../pages/About";
 import Orders from "../pages/Orders";
 import UserProfile from "../pages/UserProfile";
+import CategoryProductPage from "../pages/CategoryProductPage";
+
 
 
 
@@ -30,6 +32,7 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login/>}/>
       <Route path="/register" element={<Register/>}/>
       <Route path="/profile" element={<UserProfile/>}/>
+      <Route path="/category-products" element={<CategoryProductPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
