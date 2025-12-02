@@ -190,26 +190,31 @@ const ProductDetails = () => {
       {/* MAIN SECTION UI preserved */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {/* IMAGE GALLERY UI preserved, only using real DB data */}
-        <div className="flex flex-col sm:flex-row lg:flex-row gap-4">
-          <div className="flex sm:flex-row lg:flex-col gap-3 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0">
-            {product.images?.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                onClick={() => setSelectedImg(img)}
-                className="w-[70px] sm:w-20 h-[70px] sm:h-20 object-cover rounded-xl border cursor-pointer hover:border-black transition"
-              />
-            ))}
-          </div>
+        <div className="flex flex-col sm:flex-row gap-4">
 
-          <div className="flex-1">
-            <img
-              src={selectedImg || product.images?.[0]}
-              alt={product.name}
-              className="w-full h-[280px] sm:h-[380px] md:h-[450px] lg:h-[500px] object-cover rounded-2xl border shadow-sm"
-            />
-          </div>
-        </div>
+  {/* MAIN IMAGE (Mobile: 1, Desktop: 2) */}
+  <div className="order-1 sm:order-2 flex-1">
+    <img
+      src={selectedImg || product.images?.[0]}
+      alt={product.name}
+      className="w-full h-[300px] sm:h-[380px] md:h-[450px] lg:h-[500px] object-cover rounded-2xl border shadow-sm"
+    />
+  </div>
+
+  {/* THUMBNAILS (Mobile: 2, Desktop: 1) */}
+  <div className="order-2 sm:order-1 flex flex-row sm:flex-col gap-3 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0">
+    {product.images?.map((img, i) => (
+      <img
+        key={i}
+        src={img}
+        onClick={() => setSelectedImg(img)}
+        className="w-[70px] h-[70px] sm:w-20 sm:h-20 object-cover rounded-xl border cursor-pointer hover:border-black transition"
+      />
+    ))}
+  </div>
+
+</div>
+
 
         {/* PRODUCT INFO UI preserved */}
         <div className="space-y-4">

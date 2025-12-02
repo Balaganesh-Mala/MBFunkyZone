@@ -28,7 +28,6 @@ const Navbar = () => {
         setLoading(true);
         const res = await api.get("/settings/public"); // we will fix endpoint below if needed
         setLogo(res.data.settings?.logo?.url || "");
-        console.log("Settings:", res.data);
       } catch (err) {
         console.error("Settings Logo Error:", err);
         Swal.fire("Error", "Failed to load site logo ❗", "error");
