@@ -73,14 +73,7 @@ export const createProduct = async (req, res) => {
 
 export const getProducts = async (req, res) => {
   try {
-    const {
-      search = "",
-      category = "",
-      minRating = "",
-      page = 1,
-      limit = 10,
-      sort = ""
-    } = req.query;
+    const { search = "", category = "", minRating = "", sort = "" } = req.query;
 
     const query = { isActive: true };
 
@@ -88,7 +81,6 @@ export const getProducts = async (req, res) => {
       query.name = { $regex: search, $options: "i" };
     }
 
-    // ✅ NEW: filter using category ObjectId instead of string
     if (category && mongoose.Types.ObjectId.isValid(category)) {
       query.category = category;
     }
@@ -97,28 +89,24 @@ export const getProducts = async (req, res) => {
       query.rating = { $gte: Number(minRating) };
     }
 
-    let productsQuery = Product.find(query).populate("category"); // ✅ Populate linked category
+    let productsQuery = Product.find(query).populate("category");
 
     if (sort === "low-high") productsQuery = productsQuery.sort({ price: 1 });
     if (sort === "high-low") productsQuery = productsQuery.sort({ price: -1 });
     if (sort === "top-rated") productsQuery = productsQuery.sort({ rating: -1 });
 
-    const skip = (page - 1) * limit;
-    const total = await Product.countDocuments(query);
-    const products = await productsQuery.skip(skip).limit(Number(limit));
-
+    const products = await productsQuery; // ✅ NO LIMIT, returns all
     res.status(200).json({
       products,
-      total,
-      page: Number(page),
-      pages: Math.ceil(total / limit)
+      total: products.length
     });
 
   } catch (error) {
     console.error("Get products error:", error);
-    res.status(500).json({ message: "Server error " });
+    res.status(500).json({ message: "Server error" });
   }
 };
+
 
 export const getProductById = async (req, res) => {
   try {

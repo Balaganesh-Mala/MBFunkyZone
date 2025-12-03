@@ -11,6 +11,7 @@ const Shop = () => {
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
   const [rating, setRating] = useState("");
+  const [visible, setVisible] = useState(12); // initially show 12
 
   const [products, setProducts] = useState([]); // API Products
   const [categories, setCategories] = useState([]); // API Categories
@@ -74,7 +75,6 @@ const Shop = () => {
   return (
     <div className="bg-white min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 lg:grid-cols-[260px,1fr] gap-6">
-
         {/* Sidebar Filter UI preserved ✔ */}
         <aside className="bg-gray-50 border shadow-sm rounded-xl p-4 lg:sticky lg:top-20 h-fit">
           <h2 className="font-bold text-sm sm:text-lg mb-3 uppercase text-gray-700">
@@ -84,7 +84,9 @@ const Shop = () => {
             <button
               onClick={() => setCategory("")}
               className={`w-full text-left px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold border transition ${
-                category === "" ? "bg-black text-white border-black" : "hover:border-black"
+                category === ""
+                  ? "bg-black text-white border-black"
+                  : "hover:border-black"
               }`}
             >
               All Categories
@@ -96,7 +98,9 @@ const Shop = () => {
                 <button
                   onClick={() => setCategory(c._id)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold border transition ${
-                    category === c._id ? "bg-black text-white border-black" : "hover:border-black"
+                    category === c._id
+                      ? "bg-black text-white border-black"
+                      : "hover:border-black"
                   }`}
                 >
                   {c.name}
@@ -138,8 +142,13 @@ const Shop = () => {
           />
 
           <div className="border-t py-4 text-start text-xs sm:text-sm text-gray-600">
-            <p className="font-bold text-gray-900">Showing 1-{filteredProducts.length} Products</p>
-            <p>Premium collection and quality products here based on products you can get discount.</p>
+            <p className="font-bold text-gray-900">
+              Showing 1-{filteredProducts.length} Products
+            </p>
+            <p>
+              Premium collection and quality products here based on products you
+              can get discount.
+            </p>
           </div>
 
           {/* ✅ Product Grid updated to use API products */}
@@ -149,8 +158,8 @@ const Shop = () => {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6 pb-6">
-              {filteredProducts.map((p) => (
-                <div key={p._id} onClick={() => navigate(`/product/${p._id}`)}> {/* ✅ Navigation added */}
+              {filteredProducts.slice(0, visible).map((p) => (
+                <div key={p._id} onClick={() => navigate(`/product/${p._id}`)}>
                   <ProductCard product={p} />
                 </div>
               ))}
@@ -159,13 +168,21 @@ const Shop = () => {
 
           {/* Pagination preserved ✔ */}
           <div className="border-t py-4 text-center text-xs sm:text-sm text-gray-600">
-            <p>Showing 1-{filteredProducts.length} Products</p>
-            <button className="mt-3 bg-black text-white px-6 py-2 text-xs sm:text-sm rounded-full hover:bg-gray-800 transition font-semibold">
-              Load More
-            </button>
+            <p className="font-bold text-gray-900">
+              Showing 1-{Math.min(visible, filteredProducts.length)} of{" "}
+              {filteredProducts.length} Products
+            </p>
+
+            {visible < filteredProducts.length && (
+              <button
+                onClick={() => setVisible((prev) => prev + 12)}
+                className="mt-3 bg-black text-white px-6 py-2 text-xs sm:text-sm rounded-full hover:bg-gray-800 transition font-semibold"
+              >
+                Load More
+              </button>
+            )}
           </div>
         </div>
-
       </div>
     </div>
   );

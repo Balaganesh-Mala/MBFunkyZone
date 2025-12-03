@@ -13,7 +13,6 @@ const AddProduct = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
-  const [imageUploading] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -21,12 +20,11 @@ const AddProduct = () => {
     mrp: "",
     category: "",
     brand: "",
-    stock: "",
     description: "",
     isFeatured: false,
     isBestSeller: false,
     isActive: true,
-    sizes: { shirt: [], pant: [] },
+    sizes: { shirt: [], pant: [] }, // ✅ Correct structure
   });
 
   const [images, setImages] = useState([null, null, null, null]);
@@ -38,12 +36,8 @@ const AddProduct = () => {
     (async () => {
       try {
         const res = await api.get("/categories");
-        console.log("Category API response:", res.data);
-
-        // ✅ NEW: Extract array properly
         setCategories(res.data.categories);
       } catch (error) {
-        console.error("Failed to load categories:", error);
         Swal.fire("Error", "Failed to load categories ❗", "error");
       }
     })();
@@ -67,9 +61,9 @@ const AddProduct = () => {
       const file = e.target.files[0];
       if (!file) return;
 
-      const newFiles = [...images];
-      newFiles[index] = file;
-      setImages(newFiles);
+      const newImages = [...images];
+      newImages[index] = file;
+      setImages(newImages);
 
       const newPrev = [...previews];
       newPrev[index] = URL.createObjectURL(file);
@@ -79,13 +73,17 @@ const AddProduct = () => {
     fileInput.click();
   };
 
+  // ✅ Fix Size Handler — Save sizes without comma in DB, only comma in UI
   const handleSizeChange = (type, value) => {
-    setForm((prev) => ({
+    setForm(prev => ({
       ...prev,
       sizes: {
         ...prev.sizes,
-        [type]: value.split(",").map((s) => s.trim()),
-      },
+        [type]: value.split(",").map(s => ({
+          size: s.trim(),
+          stock: 0  // default stock, admin can edit later
+        }))
+      }
     }));
   };
 
@@ -93,34 +91,44 @@ const AddProduct = () => {
     e.preventDefault();
 
     if (images.some((img) => img === null)) {
-      Swal.fire("Error", "Please select all 4 images ❗", "warning");
+      Swal.fire("Error", "Select all 4 images ❗", "warning");
       setStep(2);
       return;
     }
 
     const fd = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-      if (key === "sizes") fd.append("sizes", JSON.stringify(value));
-      else fd.append(key, value);
-    });
 
+    fd.append("name", form.name);
+    fd.append("price", form.price);
+    fd.append("mrp", form.mrp);
+    fd.append("category", form.category);
+    fd.append("brand", form.brand);
+    fd.append("description", form.description);
+    fd.append("isFeatured", form.isFeatured);
+    fd.append("isBestSeller", form.isBestSeller);
+    fd.append("isActive", form.isActive);
+
+    // ✅ Important — Send sizes in JSON format to match backend
+    fd.append("sizes", JSON.stringify({
+      shirt: form.sizes.shirt,
+      pant: form.sizes.pant
+    }));
+
+    // ✅ append images
     images.forEach((file) => fd.append("images", file));
 
     try {
       setSubmitting(true);
 
       await api.post("/products/upload", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": "multipart/form-data" }
       });
 
-      Swal.fire("Success!", "Product added successfully! 🎉", "success");
+      Swal.fire("Success!", "Product added! 🎉", "success");
       navigate("/admin/products");
+
     } catch (err) {
-      Swal.fire(
-        "Error",
-        err.response?.data?.message || "Upload failed ❗",
-        "error"
-      );
+      Swal.fire("Error", err.response?.data?.message || "Upload failed ❗", "error");
     } finally {
       setSubmitting(false);
     }
@@ -131,137 +139,60 @@ const AddProduct = () => {
       {submitting && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm z-[2000]">
           <Loader2 className="animate-spin w-6 h-6 mb-2" />
-          <p className="text-sm font-semibold text-gray-700">
-            Submitting Product...
-          </p>
+          <p className="text-sm font-semibold text-gray-700">Submitting Product...</p>
         </div>
       )}
 
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-xl">
-            ←
-          </button>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800">
-            Add Product (Admin)
-          </h1>
-        </div>
+      <div className="flex items-center gap-3">
+        <button onClick={() => navigate(-1)} className="text-xl">←</button>
+        <h1 className="text-xl md:text-2xl font-bold">Add Product</h1>
       </div>
 
       <div className="flex gap-2 flex-wrap text-xs md:text-sm">
-        {["Product Info", "Upload Images", "Sizes", "Submit"].map(
-          (label, i) => (
-            <div
-              key={i}
-              onClick={() => setStep(i + 1)}
-              className={`px-3 py-1.5 rounded-full border cursor-pointer transition ${
-                step === i + 1
-                  ? "bg-black text-white"
-                  : "bg-white text-gray-600"
-              }`}
-            >
-              {label}
-            </div>
-          )
-        )}
+        {["Product Info", "Upload Images", "Sizes", "Submit"].map((label, i) => (
+          <div key={i} onClick={() => setStep(i + 1)}
+            className={`px-3 py-1.5 rounded-full border cursor-pointer ${
+              step === i + 1 ? "bg-black text-white" : "bg-white text-gray-600"
+            }`}>
+            {label}
+          </div>
+        ))}
       </div>
 
       <Card>
         <CardContent className="p-5 md:p-7 space-y-5">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit}>
+
             {/* STEP 1 */}
             {step === 1 && (
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label>Product Name *</Label>
-                  <Input
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
+              <div className="grid gap-4">
+                <Label>Product Name *</Label>
+                <Input name="name" value={form.name} onChange={handleChange} required />
 
-                <div>
-                  <Label>Category *</Label>
-                  <select
-                    name="category"
-                    value={form.category}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, category: e.target.value }))
-                    }
-                    required
-                    className="w-full border rounded-1xl.2 p-2 text-sm"
-                  >
-                    <option value="" disabled>
-                      Select a category
-                    </option>
-                    {categories.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <Label>Category *</Label>
+                <select name="category" value={form.category} onChange={handleChange} required
+                  className="w-full border rounded-xl p-2 text-sm">
+                  <option value="" disabled>Select Category</option>
+                  {categories.map((c) => (
+                    <option key={c._id} value={c._id}>{c.name}</option>
+                  ))}
+                </select>
 
-                <div>
-                  <Label>Brand *</Label>
-                  <Input
-                    name="brand"
-                    value={form.brand}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
+                <Label>Brand *</Label>
+                <Input name="brand" value={form.brand} onChange={handleChange} required />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <Label>Price *</Label>
-                    <Input
-                      type="number"
-                      name="price"
-                      value={form.price}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label>MRP *</Label>
-                    <Input
-                      type="number"
-                      name="mrp"
-                      value={form.mrp}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
+                <Label>Price *</Label>
+                <Input type="number" name="price" value={form.price} onChange={handleChange} required />
 
-                <div>
-                  <Label>Stock *</Label>
-                  <Input
-                    type="number"
-                    name="stock"
-                    value={form.stock}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
+                <Label>MRP *</Label>
+                <Input type="number" name="mrp" value={form.mrp} onChange={handleChange} required />
 
-                <div>
-                  <Label>Description</Label>
-                  <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={handleChange}
-                    className="w-full h-28 border rounded-xl p-3 text-sm"
-                  />
-                </div>
+                <Label>Description</Label>
+                <textarea name="description" value={form.description} onChange={handleChange}
+                  className="w-full h-28 border rounded-xl p-3 text-sm" />
 
                 <div className="flex justify-end">
-                  <Button type="button" onClick={() => setStep(2)}>
-                    Next →
-                  </Button>
+                  <Button type="button" onClick={() => setStep(2)}>Next →</Button>
                 </div>
               </div>
             )}
@@ -270,19 +201,12 @@ const AddProduct = () => {
             {step === 2 && (
               <div className="space-y-3">
                 <Label>Upload 4 Images *</Label>
-
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
                   {images.map((_, i) => (
-                    <div
-                      key={i}
-                      onClick={() => handleImageSelect(i)}
-                      className="relative w-full aspect-square border-2 rounded-2xl flex items-center justify-center bg-gray-50 cursor-pointer"
-                    >
+                    <div key={i} onClick={() => handleImageSelect(i)}
+                      className="w-full aspect-square border-2 rounded-2xl flex items-center justify-center cursor-pointer bg-gray-50">
                       {previews[i] ? (
-                        <img
-                          src={previews[i]}
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={previews[i]} className="w-full h-full object-cover rounded-2xl"/>
                       ) : (
                         <ImagePlus className="w-7 h-7 text-gray-400" />
                       )}
@@ -290,114 +214,65 @@ const AddProduct = () => {
                   ))}
                 </div>
 
-                <p className="text-xs text-gray-500">
-                  {images.filter(Boolean).length}/4 selected
-                </p>
-
                 <div className="flex justify-between pt-5">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setStep(1)}
-                  >
-                    ← Back
-                  </Button>
-                  <Button type="button" onClick={() => setStep(3)}>
-                    Next →
-                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setStep(1)}>← Back</Button>
+                  <Button type="button" onClick={() => setStep(3)}>Next →</Button>
                 </div>
               </div>
             )}
 
             {/* STEP 3 */}
             {step === 3 && (
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label>Shirt Sizes</Label>
-                  <Input
-                    placeholder="S, M, L, XL"
-                    value={form.sizes.shirt.join(",")}
-                    onChange={(e) => handleSizeChange("shirt", e.target.value)}
-                  />
-                </div>
+              <div className="grid gap-4">
+                <Label>Shirt Sizes</Label>
+                <Input placeholder="S, M, L, XL"
+                  value={form.sizes.shirt.map(s => s.size).join(",")}
+                  onChange={(e) => handleSizeChange("shirt", e.target.value)} />
 
-                <div>
-                  <Label>Pant Sizes</Label>
-                  <Input
-                    placeholder="28, 30, 32, 34"
-                    value={form.sizes.pant.join(",")}
-                    onChange={(e) => handleSizeChange("pant", e.target.value)}
-                  />
-                </div>
+                <Label>Pant Sizes</Label>
+                <Input placeholder="28, 30, 32, 34"
+                  value={form.sizes.pant.map(s => s.size).join(",")}
+                  onChange={(e) => handleSizeChange("pant", e.target.value)} />
 
                 <div className="flex justify-end">
-                  <Button type="button" onClick={() => setStep(4)}>
-                    Next →
-                  </Button>
+                  <Button type="button" onClick={() => setStep(4)}>Next →</Button>
                 </div>
               </div>
             )}
 
             {/* STEP 4 */}
-            {/* STEP 4 — Review & Submit */}
             {step === 4 && (
-              <div className="space-y-4">
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between border p-2 rounded">
-                    <Label>Featured</Label>
-                    <Switch
-                      checked={form.isFeatured}
-                      onCheckedChange={(val) => handleToggle("isFeatured", val)}
-                    />
-                  </div>
-
-                  <div className="flex justify-between border p-2 rounded">
-                    <Label>Best Seller</Label>
-                    <Switch
-                      checked={form.isBestSeller}
-                      onCheckedChange={(val) =>
-                        handleToggle("isBestSeller", val)
-                      }
-                    />
-                  </div>
-
-                  <div className="flex justify-between border p-2 rounded">
-                    <Label>Active</Label>
-                    <Switch
-                      checked={form.isActive}
-                      onCheckedChange={(val) => handleToggle("isActive", val)}
-                    />
-                  </div>
+              <div className="space-y-5">
+                <div className="border p-2 rounded flex justify-between">
+                  <Label>Featured</Label>
+                  <Switch checked={form.isFeatured}
+                    onCheckedChange={(val) => handleToggle("isFeatured", val)} />
                 </div>
 
-                <div className="text-center space-y-4 py-6">
-                  <h2 className="text-lg md:text-xl font-bold">
-                    Review & Publish
-                  </h2>
+                <div className="border p-2 rounded flex justify-between">
+                  <Label>Best Seller</Label>
+                  <Switch checked={form.isBestSeller}
+                    onCheckedChange={(val) => handleToggle("isBestSeller", val)} />
+                </div>
 
+                <div className="border p-2 rounded flex justify-between">
+                  <Label>Active</Label>
+                  <Switch checked={form.isActive}
+                    onCheckedChange={(val) => handleToggle("isActive", val)} />
+                </div>
+
+                <div className="text-center py-6">
                   <Button type="submit" disabled={submitting}>
-                    {submitting ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Publishing...
-                      </span>
-                    ) : (
-                      "Publish Product"
-                    )}
+                    {submitting ? "Publishing..." : "Publish Product"}
                   </Button>
 
-                  <div className="flex justify-center mt-4">
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => setStep(3)}
-                    >
-                      ← Back
-                    </Button>
-                  </div>
+                  <Button variant="outline" type="button" onClick={() => setStep(3)} className="mt-4">
+                    ← Back
+                  </Button>
                 </div>
               </div>
             )}
+
           </form>
         </CardContent>
       </Card>
