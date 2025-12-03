@@ -253,60 +253,58 @@ const ProductDetails = () => {
           </p>
 
           {/* SIZE SELECTOR */}
-          <div>
-            <p className="text-xs font-bold text-gray-500 uppercase mb-2">
-              Select Size:
-            </p>
+          <div className="flex flex-wrap gap-2">
+  {product.sizes?.map((item) => {
+    const isOut = item.stock === 0;
 
-            <div className="flex flex-wrap gap-2">
-              {product.sizes?.map((item) => {
-                const isOut = item.stock === 0;
-                const isLimited = item.stock > 0 && item.stock <= 5;
-                const isInStock = item.stock > 5;
+    return (
+      <button
+        key={`${item.type}-${item.size}`}
+        disabled={isOut}
+        onClick={() => setSize(item)}
+        className={`
+          px-4 py-2 rounded-full border text-xs font-semibold w-fit transition
+          ${
+            size?.size === item.size && size?.type === item.type
+              ? "bg-black text-white border-black"
+              : "text-gray-800 hover:border-black"
+          }
+          ${isOut ? "opacity-40 cursor-not-allowed" : ""}
+        `}
+      >
+        {item.size.toUpperCase()}
+      </button>
+    );
+  })}
+</div>
 
-                return (
-                  <button
-                    key={`${item.type}-${item.size}`}
-                    disabled={isOut}
-                    onClick={() => setSize(item)}
-                    className={`
-            relative px-4 py-2 rounded-full border text-xs font-semibold w-fit transition
-            ${
-              size?.size === item.size && size?.type === item.type
-                ? "bg-black text-white border-black"
-                : "text-gray-800 hover:border-black"
-            }
-            ${isOut ? "opacity-40 cursor-not-allowed" : ""}
-          `}
-                  >
-                    {/* Size Text (strike-through when out of stock) */}
-                    <span className={`${isOut ? "line-through" : ""}`}>
-                      {item.size.toUpperCase()}
-                    </span>
+{/* STOCK INFO BELOW */}
+{size && (
+  <p className="mt-2 text-xs font-semibold text-gray-600">
+    Stock:{" "}<span className="font-bold text-lg text-black">{size.stock}</span>{" "}
+    <span
+      className={`
+        font-bold
+        ${
+          size.stock === 0
+            ? "text-red-600"
+            : size.stock <= 5
+            ? "text-yellow-600"
+            : "text-green-600"
+        }
+      `}
+    >
+      {size.stock === 0
+        ? "Out of Stock"
+        : size.stock <= 5
+        ? "Limited Stock"
+        : "In Stock"}
+    </span>
+  </p>
+)}
 
-                    {/* STOCK LABEL */}
-                    {isOut && (
-                      <span className="absolute -top-2 right-0 text-[10px] text-red-600 font-bold">
-                        Out
-                      </span>
-                    )}
 
-                    {isLimited && !isOut && (
-                      <span className="absolute -top-2 right-0 text-[10px] text-yellow-600 font-bold">
-                        Limited
-                      </span>
-                    )}
 
-                    {isInStock && (
-                      <span className="absolute -top-2 right-0 text-[10px] text-green-600 font-bold">
-                        In Stock
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           {/* QUANTITY + ADD TO CART UI preserved */}
           <div className="flex items-center gap-3">

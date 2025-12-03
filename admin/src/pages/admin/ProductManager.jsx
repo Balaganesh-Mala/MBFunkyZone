@@ -17,7 +17,7 @@ const ProductManager = () => {
 
   const loadProducts = async () => {
     try {
-      const res = await api.get("/products");
+      const res = await api.get("/products/admin/all");
       setProducts(
         res.data.products?.map((p) => ({
           ...p,
@@ -115,7 +115,7 @@ const ProductManager = () => {
                     <td className="p-2 md:p-3">
                       ₹{Number(p.price).toLocaleString()}
                     </td>
-                    <td className="p-2 md:p-3">{p.stock}</td>
+                    <td className="p-2 md:p-3">{p.totalStock}</td>
 
                     {/* 🟡 Toggle Switch */}
                     <td className="p-2 md:p-3">

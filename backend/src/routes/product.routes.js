@@ -9,6 +9,7 @@ import {
   deleteProduct,
   addProductReview,
   getProductReviews,
+  getAllProducts,
 } from "../controllers/product.controller.js";
 
 import { protect } from "../middleware/auth.middleware.js";
@@ -30,6 +31,8 @@ router.post(
 );
 
 router.put("/:id", protect, isAdmin, updateProduct);
+router.get("/admin/all",protect, isAdmin, getAllProducts);
+
 
 router.delete("/:id", protect, isAdmin, deleteProduct);
 

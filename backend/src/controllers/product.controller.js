@@ -92,9 +92,14 @@ export const createProduct = async (req, res) => {
       totalStock,
       images: imageUrls,
       description,
-      isFeatured,
-      isBestSeller,
-      isActive: isActive ?? true,
+
+      // Fixed boolean conversions
+      isFeatured: isFeatured === "true" || isFeatured === true ? true : false,
+
+      isBestSeller:
+        isBestSeller === "true" || isBestSeller === true ? true : false,
+
+      isActive: isActive === "true" || isActive === true ? true : false,
     });
 
     const savedProduct = await product.save();
@@ -162,8 +167,7 @@ export const getProductById = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product)
-      return res.status(404).json({ message: "Product not found" });
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
     const {
       name,
@@ -171,7 +175,7 @@ export const updateProduct = async (req, res) => {
       mrp,
       category,
       brand,
-      sizes,        // can be object or JSON string
+      sizes, // can be object or JSON string
       description,
       isFeatured,
       isBestSeller,
@@ -198,9 +202,14 @@ export const updateProduct = async (req, res) => {
     if (brand) product.brand = brand;
     if (description) product.description = description;
 
-    if (isFeatured !== undefined) product.isFeatured = isFeatured;
-    if (isBestSeller !== undefined) product.isBestSeller = isBestSeller;
-    if (isActive !== undefined) product.isActive = isActive;
+    if (isFeatured !== undefined)
+      product.isFeatured = isFeatured === "true" || isFeatured === true;
+
+    if (isBestSeller !== undefined)
+      product.isBestSeller = isBestSeller === "true" || isBestSeller === true;
+
+    if (isActive !== undefined)
+      product.isActive = isActive === "true" || isActive === true;
 
     // ------------------------------
     // ⭐ FIXED — HANDLE SIZES
@@ -243,7 +252,6 @@ export const updateProduct = async (req, res) => {
       message: "Product updated successfully",
       product: updatedProduct,
     });
-
   } catch (error) {
     console.error("Update product error:", error);
     res.status(500).json({
@@ -252,7 +260,6 @@ export const updateProduct = async (req, res) => {
     });
   }
 };
-
 
 export const deleteProduct = async (req, res) => {
   try {
@@ -311,3 +318,12 @@ export const getProductReviews = asyncHandler(async (req, res) => {
     .status(200)
     .json({ success: true, reviews: product.reviews, rating: product.rating });
 });
+
+export const getAllProducts = async (req, res) => {
+  try {
+    const products = await Product.find().populate("category");
+    res.status(200).json({ success: true, products });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
