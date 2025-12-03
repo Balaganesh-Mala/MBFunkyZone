@@ -78,15 +78,8 @@ const ProductDetails = () => {
   }, [id]);
 
   useEffect(() => {
-    if (product?.sizes) {
-      const shirtSizes = product.sizes.shirt || [];
-      const pantSizes = product.sizes.pant || [];
-
-      if (pantSizes.length > 0) {
-        setSize(pantSizes[0]); // first pant size default
-      } else if (shirtSizes.length > 0) {
-        setSize(shirtSizes[0]); // otherwise shirt size default
-      }
+    if (product?.sizes?.length > 0) {
+      setSize(product.sizes[0]); // default first size
     }
   }, [product]);
 
@@ -191,30 +184,27 @@ const ProductDetails = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {/* IMAGE GALLERY UI preserved, only using real DB data */}
         <div className="flex flex-col sm:flex-row gap-4">
+          {/* MAIN IMAGE (Mobile: 1, Desktop: 2) */}
+          <div className="order-1 sm:order-2 flex-1">
+            <img
+              src={selectedImg || product.images?.[0]}
+              alt={product.name}
+              className="w-full h-[300px] sm:h-[380px] md:h-[450px] lg:h-[500px] object-cover rounded-2xl border shadow-sm"
+            />
+          </div>
 
-  {/* MAIN IMAGE (Mobile: 1, Desktop: 2) */}
-  <div className="order-1 sm:order-2 flex-1">
-    <img
-      src={selectedImg || product.images?.[0]}
-      alt={product.name}
-      className="w-full h-[300px] sm:h-[380px] md:h-[450px] lg:h-[500px] object-cover rounded-2xl border shadow-sm"
-    />
-  </div>
-
-  {/* THUMBNAILS (Mobile: 2, Desktop: 1) */}
-  <div className="order-2 sm:order-1 flex flex-row sm:flex-col gap-3 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0">
-    {product.images?.map((img, i) => (
-      <img
-        key={i}
-        src={img}
-        onClick={() => setSelectedImg(img)}
-        className="w-[70px] h-[70px] sm:w-20 sm:h-20 object-cover rounded-xl border cursor-pointer hover:border-black transition"
-      />
-    ))}
-  </div>
-
-</div>
-
+          {/* THUMBNAILS (Mobile: 2, Desktop: 1) */}
+          <div className="order-2 sm:order-1 flex flex-row sm:flex-col gap-3 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0">
+            {product.images?.map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                onClick={() => setSelectedImg(img)}
+                className="w-[70px] h-[70px] sm:w-20 sm:h-20 object-cover rounded-xl border cursor-pointer hover:border-black transition"
+              />
+            ))}
+          </div>
+        </div>
 
         {/* PRODUCT INFO UI preserved */}
         <div className="space-y-4">
@@ -257,29 +247,64 @@ const ProductDetails = () => {
               <li>Stylish Modern Look</li>
             </ul>
           </div>
+          {/* Show linked category name if needed anywhere */}
+          <p className="text-xs sm:text-sm text-gray-600">
+            Category: <strong>{product.category?.name}</strong>
+          </p>
 
-          {/* SIZE selector UI preserved */}
+          {/* SIZE SELECTOR */}
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase mb-2">
               Select Size:
             </p>
+
             <div className="flex flex-wrap gap-2">
-              {[
-                ...(product.sizes?.shirt || []),
-                ...(product.sizes?.pant || []),
-              ].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSize(s)}
-                  className={`px-4 py-2 rounded-full border text-xs font-semibold transition ${
-                    size === s
-                      ? "bg-black text-white border-black"
-                      : "text-gray-800 hover:border-black"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
+              {product.sizes?.map((item) => {
+                const isOut = item.stock === 0;
+                const isLimited = item.stock > 0 && item.stock <= 5;
+                const isInStock = item.stock > 5;
+
+                return (
+                  <button
+                    key={`${item.type}-${item.size}`}
+                    disabled={isOut}
+                    onClick={() => setSize(item)}
+                    className={`
+            relative px-4 py-2 rounded-full border text-xs font-semibold w-fit transition
+            ${
+              size?.size === item.size && size?.type === item.type
+                ? "bg-black text-white border-black"
+                : "text-gray-800 hover:border-black"
+            }
+            ${isOut ? "opacity-40 cursor-not-allowed" : ""}
+          `}
+                  >
+                    {/* Size Text (strike-through when out of stock) */}
+                    <span className={`${isOut ? "line-through" : ""}`}>
+                      {item.size.toUpperCase()}
+                    </span>
+
+                    {/* STOCK LABEL */}
+                    {isOut && (
+                      <span className="absolute -top-2 right-0 text-[10px] text-red-600 font-bold">
+                        Out
+                      </span>
+                    )}
+
+                    {isLimited && !isOut && (
+                      <span className="absolute -top-2 right-0 text-[10px] text-yellow-600 font-bold">
+                        Limited
+                      </span>
+                    )}
+
+                    {isInStock && (
+                      <span className="absolute -top-2 right-0 text-[10px] text-green-600 font-bold">
+                        In Stock
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -319,14 +344,25 @@ const ProductDetails = () => {
                   );
                 }
 
-                const data = await addToCartBackend(product._id, qty, size); // pass size also
+                try {
+                  const data = await addToCartBackend(product._id, qty, {
+                    type: size.type,
+                    size: size.size,
+                  });
 
-                if (data.success) {
+                  if (data.success) {
+                    Swal.fire(
+                      "Added",
+                      `${product.name} added to cart`,
+                      "success"
+                    ).then(() => navigate("/cart"));
+                  }
+                } catch (err) {
                   Swal.fire(
-                    "Added",
-                    `${product.name} added to cart`,
-                    "success"
-                  ).then(() => navigate("/cart")); // navigate to cart after login
+                    "Stock Limit",
+                    err?.response?.data?.message || err.message,
+                    "error"
+                  );
                 }
               }}
               className="flex items-center justify-center gap-2 flex-1 bg-black text-white py-3 rounded-full"
@@ -355,13 +391,21 @@ const ProductDetails = () => {
                 );
               }
 
-              const data = await addToCartBackend(product._id, qty, size);
-              if (data.success) {
-                navigate("/checkout");
-              }
+              try {
+                const data = await addToCartBackend(product._id, qty, {
+                  type: size.type,
+                  size: size.size,
+                });
 
-              if (data.success) {
-                navigate("/checkout");
+                if (data.success) {
+                  navigate("/checkout");
+                }
+              } catch (err) {
+                Swal.fire(
+                  "Stock Limit",
+                  err?.response?.data?.message || err.message,
+                  "error"
+                );
               }
             }}
             className="w-full border border-gray-300 py-3 rounded-full font-semibold hover:border-black transition text-xs sm:text-sm"
@@ -378,11 +422,6 @@ const ProductDetails = () => {
               <PiRepeatLight /> 7-Day Easy Replacement
             </p>
           </div>
-
-          {/* Show linked category name if needed anywhere */}
-          <p className="text-xs sm:text-sm text-gray-600">
-            Category: <strong>{product.category?.name}</strong>
-          </p>
         </div>
       </div>
 

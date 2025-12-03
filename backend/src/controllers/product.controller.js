@@ -4,6 +4,11 @@ import Category from "../models/category.model.js";
 import asyncHandler from "express-async-handler";
 import { uploadToCloudinary as uploadMultipleToCloudinary } from "../middleware/upload.middleware.js";
 
+// 🔥 Calculate total stock
+const calculateTotalStock = (sizesArray) => {
+  return sizesArray.reduce((sum, item) => sum + (item.stock || 0), 0);
+};
+
 export const createProduct = async (req, res) => {
   try {
     const {
@@ -12,62 +17,96 @@ export const createProduct = async (req, res) => {
       mrp,
       category,
       brand,
-      stock,
       sizes,
       description,
       isFeatured,
       isBestSeller,
-      isActive
+      isActive,
     } = req.body;
 
-    // ✅ NEW: Validate category exists in DB
+    // Validate category
     if (!mongoose.Types.ObjectId.isValid(category)) {
-      return res.status(400).json({ message: "Invalid Category ID " });
+      return res.status(400).json({ message: "Invalid category ID" });
     }
 
     const categoryExists = await Category.findById(category);
     if (!categoryExists || !categoryExists.isActive) {
-      return res.status(400).json({ message: "Invalid Category Category not found or inactive" });
+      return res
+        .status(400)
+        .json({ message: "Category not found or inactive" });
     }
 
-    // ✅ Your existing image validation
+    // Validate images
     if (!req.files?.images || req.files.images.length !== 4) {
-      return res.status(400).json({ message: "Please upload exactly 4 images" });
+      return res
+        .status(400)
+        .json({ message: "Please upload exactly 4 images" });
     }
 
-    // ✅ Your existing Cloudinary upload loop
     const imageUrls = [];
     for (const file of req.files.images) {
-      const url = await uploadMultipleToCloudinary(file.buffer, file.originalname);
+      const url = await uploadMultipleToCloudinary(
+        file.buffer,
+        file.originalname
+      );
       imageUrls.push(url);
     }
 
-    // ✅ Create product with category linked
+    // ⭐ Parse sizes JSON
+    const parsedSizes = sizes ? JSON.parse(sizes) : {};
+
+    // ⭐ Convert {shirt:[], pant:[]} → unified array
+    let unifySizes = [];
+
+    if (parsedSizes.shirt) {
+      parsedSizes.shirt.forEach((s) => {
+        unifySizes.push({
+          type: "shirt",
+          size: s.size,
+          stock: s.stock ?? 0,
+        });
+      });
+    }
+
+    if (parsedSizes.pant) {
+      parsedSizes.pant.forEach((s) => {
+        unifySizes.push({
+          type: "pant",
+          size: s.size,
+          stock: s.stock ?? 0,
+        });
+      });
+    }
+
+    // ⭐ Auto totalStock
+    const totalStock = calculateTotalStock(unifySizes);
+
+    // ⭐ Create product
     const product = new Product({
       name,
-      price: Number(price),
-      mrp: Number(mrp),
-      category: categoryExists._id, // ✅ category linked as ObjectId
+      price,
+      mrp,
+      category,
       brand,
-      stock: Number(stock),
-      sizes: sizes ? JSON.parse(sizes) : {},
+      sizes: unifySizes,
+      totalStock,
       images: imageUrls,
-      isFeatured: !!isFeatured,
-      isBestSeller: !!isBestSeller,
-      isActive: isActive !== undefined ? isActive : true,
-      description
+      description,
+      isFeatured,
+      isBestSeller,
+      isActive: isActive ?? true,
     });
 
     const savedProduct = await product.save();
+
     res.status(201).json({
       success: true,
-      message: "Product created ",
-      product: savedProduct
+      message: "Product created successfully",
+      product: savedProduct,
     });
-
   } catch (error) {
     console.error("Create product error:", error);
-    res.status(500).json({ message: "Server error ", error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -93,20 +132,19 @@ export const getProducts = async (req, res) => {
 
     if (sort === "low-high") productsQuery = productsQuery.sort({ price: 1 });
     if (sort === "high-low") productsQuery = productsQuery.sort({ price: -1 });
-    if (sort === "top-rated") productsQuery = productsQuery.sort({ rating: -1 });
+    if (sort === "top-rated")
+      productsQuery = productsQuery.sort({ rating: -1 });
 
     const products = await productsQuery; // ✅ NO LIMIT, returns all
     res.status(200).json({
       products,
-      total: products.length
+      total: products.length,
     });
-
   } catch (error) {
     console.error("Get products error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 export const getProductById = async (req, res) => {
   try {
@@ -115,7 +153,6 @@ export const getProductById = async (req, res) => {
       return res.status(404).json({ message: "Product not found " });
     }
     res.status(200).json(product);
-
   } catch (error) {
     console.error("Get product error:", error);
     res.status(500).json({ message: "Server error " });
@@ -125,7 +162,8 @@ export const getProductById = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: "Product not found ❌" });
+    if (!product)
+      return res.status(404).json({ message: "Product not found" });
 
     const {
       name,
@@ -133,49 +171,88 @@ export const updateProduct = async (req, res) => {
       mrp,
       category,
       brand,
-      stock,
-      sizes,
+      sizes,        // can be object or JSON string
       description,
       isFeatured,
       isBestSeller,
-      isActive
+      isActive,
     } = req.body;
 
-    // ✅ NEW: If category updating, check exists
+    // ------------------------------
+    // CATEGORY UPDATE
+    // ------------------------------
     if (category && mongoose.Types.ObjectId.isValid(category)) {
       const categoryExists = await Category.findById(category);
       if (!categoryExists || !categoryExists.isActive) {
-        return res.status(400).json({ message: "Invalid Category" });
+        return res.status(400).json({ message: "Invalid category" });
       }
-      product.category = categoryExists._id; // ✅ update linked category
+      product.category = categoryExists._id;
     }
 
-    // ✅ Your existing update logic
-    product.name = name ?? product.name;
-    product.price = price ?? product.price;
-    product.mrp = mrp ?? product.mrp;
-    product.brand = brand ?? product.brand;
-    product.stock = stock ?? product.stock;
-    product.description = description ?? product.description;
-    product.isFeatured = isFeatured ?? product.isFeatured;
-    product.isBestSeller = isBestSeller ?? product.isBestSeller;
-    product.isActive = isActive ?? product.isActive;
+    // ------------------------------
+    // BASIC FIELDS
+    // ------------------------------
+    if (name) product.name = name;
+    if (price) product.price = price;
+    if (mrp) product.mrp = mrp;
+    if (brand) product.brand = brand;
+    if (description) product.description = description;
 
+    if (isFeatured !== undefined) product.isFeatured = isFeatured;
+    if (isBestSeller !== undefined) product.isBestSeller = isBestSeller;
+    if (isActive !== undefined) product.isActive = isActive;
+
+    // ------------------------------
+    // ⭐ FIXED — HANDLE SIZES
+    // Accepts both:
+    //   1) sizes = "[{...}]" (string from AddProduct)
+    //   2) sizes = [{...}]   (object from EditProduct)
+    // ------------------------------
     if (sizes) {
-      product.sizes = sizes;
+      let parsedSizes = sizes;
+
+      // Convert only when string
+      if (typeof sizes === "string") {
+        try {
+          parsedSizes = JSON.parse(sizes);
+        } catch (err) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid sizes JSON format",
+          });
+        }
+      }
+
+      // parsedSizes is an array: [{type,size,stock}, ...]
+      product.sizes = parsedSizes;
+
+      // Recalculate total stock
+      product.totalStock = parsedSizes.reduce(
+        (sum, s) => sum + (s.stock || 0),
+        0
+      );
     }
 
+    // ------------------------------
+    // SAVE UPDATED PRODUCT
+    // ------------------------------
     const updatedProduct = await product.save();
+
     res.status(200).json({
-      message: "Product updated successfully ",
-      product: updatedProduct
+      success: true,
+      message: "Product updated successfully",
+      product: updatedProduct,
     });
 
   } catch (error) {
     console.error("Update product error:", error);
-    res.status(500).json({ message: "Server error " });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
+
 
 export const deleteProduct = async (req, res) => {
   try {
@@ -184,13 +261,11 @@ export const deleteProduct = async (req, res) => {
 
     await product.deleteOne();
     res.status(200).json({ message: "Product deleted successfully" });
-
   } catch (error) {
     console.error("Delete product error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 export const addProductReview = asyncHandler(async (req, res) => {
   const { rating, comment } = req.body;
@@ -198,7 +273,9 @@ export const addProductReview = asyncHandler(async (req, res) => {
 
   const product = await Product.findById(req.params.id);
   if (!product) {
-    return res.status(404).json({ success:false, message:"Product not found" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Product not found" });
   }
 
   product.reviews.push({
@@ -209,25 +286,28 @@ export const addProductReview = asyncHandler(async (req, res) => {
 
   // update average rating
   const allReviews = product.reviews; // ✅ correct field
-const totalReviews = allReviews.length;
-const avgRating =
-  allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
+  const totalReviews = allReviews.length;
+  const avgRating =
+    allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
 
-product.rating = avgRating; // ✅ store average rating
-await product.save();
-
+  product.rating = avgRating; // ✅ store average rating
+  await product.save();
 
   product.rating = avgRating;
   await product.save();
 
-  res.status(201).json({ success:true, message:"Review added ✅", product });
+  res.status(201).json({ success: true, message: "Review added ✅", product });
 });
 
 // ⭐ Get product reviews (public)
 export const getProductReviews = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id, "reviews rating");
   if (!product) {
-    return res.status(404).json({ success:false, message:"Product not found" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Product not found" });
   }
-  res.status(200).json({ success:true, reviews: product.reviews, rating: product.rating });
+  res
+    .status(200)
+    .json({ success: true, reviews: product.reviews, rating: product.rating });
 });

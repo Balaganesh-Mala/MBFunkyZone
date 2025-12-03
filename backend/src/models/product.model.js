@@ -1,4 +1,3 @@
-// server/models/Product.js
 import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
@@ -10,10 +9,11 @@ const reviewSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const sizeSchema = new mongoose.Schema(
+const sizeStockSchema = new mongoose.Schema(
   {
-    shirt: [{ type: String }],
-    pant: [{ type: String }], // e.g. 28, 30, 32 ...
+    type: { type: String, required: true }, // shirt/pant
+    size: { type: String, required: true }, // S, XL, 30, 32
+    stock: { type: Number, required: true, default: 0 }
   },
   { _id: false }
 );
@@ -24,22 +24,23 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     mrp: { type: Number, required: true },
 
-    rating: { type: Number, default: 0 }, // average rating
-    ratings: { type: Number, default: 0 }, // total rating count if needed
+    rating: { type: Number, default: 0 },
+    ratings: { type: Number, default: 0 },
 
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
       required: true,
     },
-    // I want linked Category
+
     brand: { type: String, required: true },
 
-    stock: { type: Number, required: true, default: 0 },
+    // ⭐ Auto-calculated stock
+    totalStock: { type: Number, default: 0 },
 
-    images: [{ type: String, required: true }], // Cloudinary URLs in real backend
+    images: [{ type: String, required: true }],
 
-    sizes: sizeSchema, // { shirt: [...], pant: [...] }
+    sizes: [sizeStockSchema],
 
     description: { type: String, default: "" },
 

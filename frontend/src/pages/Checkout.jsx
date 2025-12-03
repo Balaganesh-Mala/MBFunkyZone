@@ -9,8 +9,8 @@ import Input from "../components/ui/input.jsx";
 import Label from "../components/ui/label.jsx";
 import Button from "../components/ui/button.jsx";
 
-import { placeOrder } from "../api/order.api.js"; // ✅ using your order API
-import { apiGetUserCart } from "../api/cart.api.js"; // ✅ fetch latest cart from backend
+import { placeOrder } from "../api/order.api.js";
+import { apiGetUserCart } from "../api/cart.api.js";
 
 const Checkout = () => {
   const { cartItems, setCartItems, clearCartBackend } = useCart();
@@ -26,7 +26,7 @@ const Checkout = () => {
     paymentMethod: "COD",
   });
 
-  // ✅ Always load latest cart items from backend
+  // ✅ Always load latest cart from DB
   useEffect(() => {
     (async () => {
       try {
@@ -38,19 +38,23 @@ const Checkout = () => {
     })();
   }, []);
 
-  const total = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const total = cartItems.reduce(
+    (sum, i) => sum + i.price * i.quantity,
+    0
+  );
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  // -------------------------
-  // ✅ PLACE ORDER
-  // -------------------------
+  // --------------------------------------------------
+  // ✅ FIXED — Place Order
+  // --------------------------------------------------
   const handlePlaceOrder = async (method) => {
     if (!cartItems.length) {
-      return Swal.fire("Cart Empty", "Add some products first", "warning");
+      return Swal.fire("Cart Empty", "Add products first", "warning");
     }
 
+    // Required address validation
     if (
       !form.name ||
       !form.mobile ||
@@ -61,10 +65,14 @@ const Checkout = () => {
       return Swal.fire("Error", "Please fill all address fields", "error");
     }
 
+    // -----------------------------------------------
+    // 🔥 FIXED — SEND type + size BOTH
+    // -----------------------------------------------
     const orderItems = cartItems.map((i) => ({
       productId: i.product._id,
       quantity: i.quantity,
-      size: i.size, 
+      type: i.type,     // REQUIRED
+      size: i.size,     // REQUIRED
       image: i.product?.images?.[0] || "",
     }));
 
@@ -79,9 +87,9 @@ const Checkout = () => {
         state: "India",
       },
       paymentMethod: method === "online" ? "online" : "COD",
-      totalPrice: total,
       shippingPrice: 0,
       itemsPrice: total,
+      totalPrice: total,
     };
 
     try {
@@ -90,13 +98,15 @@ const Checkout = () => {
 
       if (res.data.success) {
         Swal.fire("Order Confirmed", "Your order has been placed", "success");
-        await clearCartBackend(); // optional: clear from DB also
+
+        await clearCartBackend(); // clear after success
+
         navigate("/orders");
       }
     } catch (err) {
       console.error("Order Error:", err);
       Swal.fire(
-        "Order Failed ",
+        "Order Failed",
         err.response?.data?.message || "Something went wrong",
         "error"
       );
@@ -105,9 +115,9 @@ const Checkout = () => {
     }
   };
 
-  // -------------------------
-  // ✅ CLEAR CART UI ONLY (backend still keeps DB)
-  // -------------------------
+  // --------------------------------------------------
+  // Clear Cart Handler
+  // --------------------------------------------------
   const handleClear = async () => {
     try {
       setLoading(true);
@@ -121,9 +131,9 @@ const Checkout = () => {
     }
   };
 
-  // -------------------------
-  // Placeholder Razorpay
-  // -------------------------
+  // --------------------------------------------------
+  // Razorpay Placeholder
+  // --------------------------------------------------
   const initRazorpayOrder = async () => {
     await handlePlaceOrder("online");
   };
@@ -140,6 +150,7 @@ const Checkout = () => {
       )}
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
         {/* Billing Form */}
         <div className="bg-white border rounded-2xl shadow-sm p-6 space-y-4">
           <h2 className="text-xl font-extrabold flex items-center gap-2">
@@ -148,22 +159,12 @@ const Checkout = () => {
 
           <div>
             <Label>Full Name *</Label>
-            <Input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              required
-            />
+            <Input name="name" value={form.name} onChange={handleChange} />
           </div>
 
           <div>
             <Label>Mobile *</Label>
-            <Input
-              name="mobile"
-              value={form.mobile}
-              onChange={handleChange}
-              required
-            />
+            <Input name="mobile" value={form.mobile} onChange={handleChange} />
           </div>
 
           <div>
@@ -172,32 +173,21 @@ const Checkout = () => {
               name="address"
               value={form.address}
               onChange={handleChange}
-              required
               className="w-full border rounded-xl p-3 h-24"
             />
           </div>
 
           <div>
             <Label>City *</Label>
-            <Input
-              name="city"
-              value={form.city}
-              onChange={handleChange}
-              required
-            />
+            <Input name="city" value={form.city} onChange={handleChange} />
           </div>
 
           <div>
             <Label>Pincode *</Label>
-            <Input
-              name="pincode"
-              value={form.pincode}
-              onChange={handleChange}
-              required
-            />
+            <Input name="pincode" value={form.pincode} onChange={handleChange} />
           </div>
 
-          {/* Payment Selection */}
+          {/* Payment Method */}
           <div className="space-y-2 pt-2 border-t">
             <p className="text-xs font-bold text-gray-600 uppercase">
               Payment Method:
@@ -213,38 +203,14 @@ const Checkout = () => {
                 />
                 COD
               </label>
-
-              {/*<label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="online"
-                  checked={form.paymentMethod === "online"}
-                  onChange={handleChange}
-                />
-                Online
-              </label>*/}
             </div>
           </div>
 
-          {/* Buttons */}
           {form.paymentMethod === "COD" && (
             <Button onClick={() => handlePlaceOrder("COD")} className="w-full">
               Place Order (COD)
             </Button>
           )}
-
-          {/* form.paymentMethod === "online" && (
-            <Button onClick={initRazorpayOrder} className="w-full bg-orange-500 text-white">
-              Pay via Razorpay →
-            </Button>
-          ) */}
-
-          {/* cartItems.length > 0 && (
-            <button onClick={handleClear} className="flex items-center gap-2 px-4 py-2 bg-gray-100 border rounded-full text-xs sm:text-sm">
-              <FaTrash /> Clear Cart
-            </button>
-          ) */}
         </div>
 
         {/* Order Summary */}
@@ -259,7 +225,7 @@ const Checkout = () => {
               className="flex justify-between border-b pb-2 mb-2 text-sm"
             >
               <span>
-                {i.product.name} × {i.quantity}
+                {i.product.name} ({i.size.toUpperCase()}) × {i.quantity}
               </span>
               <span className="font-bold">
                 ₹{(i.price * i.quantity).toLocaleString()}

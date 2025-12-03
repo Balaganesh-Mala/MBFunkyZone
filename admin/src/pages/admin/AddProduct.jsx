@@ -75,15 +75,15 @@ const AddProduct = () => {
 
   // ✅ Fix Size Handler — Save sizes without comma in DB, only comma in UI
   const handleSizeChange = (type, value) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       sizes: {
         ...prev.sizes,
-        [type]: value.split(",").map(s => ({
+        [type]: value.split(",").map((s) => ({
           size: s.trim(),
-          stock: 0  // default stock, admin can edit later
-        }))
-      }
+          stock: 0, // default stock, admin can edit later
+        })),
+      },
     }));
   };
 
@@ -109,10 +109,13 @@ const AddProduct = () => {
     fd.append("isActive", form.isActive);
 
     // ✅ Important — Send sizes in JSON format to match backend
-    fd.append("sizes", JSON.stringify({
-      shirt: form.sizes.shirt,
-      pant: form.sizes.pant
-    }));
+    fd.append(
+      "sizes",
+      JSON.stringify({
+        shirt: form.sizes.shirt,
+        pant: form.sizes.pant,
+      })
+    );
 
     // ✅ append images
     images.forEach((file) => fd.append("images", file));
@@ -121,14 +124,17 @@ const AddProduct = () => {
       setSubmitting(true);
 
       await api.post("/products/upload", fd, {
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      Swal.fire("Success!", "Product added! 🎉", "success");
+      Swal.fire("Success!", "Product added!", "success");
       navigate("/admin/products");
-
     } catch (err) {
-      Swal.fire("Error", err.response?.data?.message || "Upload failed ❗", "error");
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Upload failed ❗",
+        "error"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -139,60 +145,107 @@ const AddProduct = () => {
       {submitting && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm z-[2000]">
           <Loader2 className="animate-spin w-6 h-6 mb-2" />
-          <p className="text-sm font-semibold text-gray-700">Submitting Product...</p>
+          <p className="text-sm font-semibold text-gray-700">
+            Submitting Product...
+          </p>
         </div>
       )}
 
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="text-xl">←</button>
+        <button onClick={() => navigate(-1)} className="text-xl">
+          ←
+        </button>
         <h1 className="text-xl md:text-2xl font-bold">Add Product</h1>
       </div>
 
       <div className="flex gap-2 flex-wrap text-xs md:text-sm">
-        {["Product Info", "Upload Images", "Sizes", "Submit"].map((label, i) => (
-          <div key={i} onClick={() => setStep(i + 1)}
-            className={`px-3 py-1.5 rounded-full border cursor-pointer ${
-              step === i + 1 ? "bg-black text-white" : "bg-white text-gray-600"
-            }`}>
-            {label}
-          </div>
-        ))}
+        {["Product Info", "Upload Images", "Sizes", "Submit"].map(
+          (label, i) => (
+            <div
+              key={i}
+              onClick={() => setStep(i + 1)}
+              className={`px-3 py-1.5 rounded-full border cursor-pointer ${
+                step === i + 1
+                  ? "bg-black text-white"
+                  : "bg-white text-gray-600"
+              }`}
+            >
+              {label}
+            </div>
+          )
+        )}
       </div>
 
       <Card>
         <CardContent className="p-5 md:p-7 space-y-5">
           <form onSubmit={handleSubmit}>
-
             {/* STEP 1 */}
             {step === 1 && (
               <div className="grid gap-4">
                 <Label>Product Name *</Label>
-                <Input name="name" value={form.name} onChange={handleChange} required />
+                <Input
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  required
+                />
 
                 <Label>Category *</Label>
-                <select name="category" value={form.category} onChange={handleChange} required
-                  className="w-full border rounded-xl p-2 text-sm">
-                  <option value="" disabled>Select Category</option>
+                <select
+                  name="category"
+                  value={form.category}
+                  onChange={handleChange}
+                  required
+                  className="w-full border rounded-xl p-2 text-sm"
+                >
+                  <option value="" disabled>
+                    Select Category
+                  </option>
                   {categories.map((c) => (
-                    <option key={c._id} value={c._id}>{c.name}</option>
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
 
                 <Label>Brand *</Label>
-                <Input name="brand" value={form.brand} onChange={handleChange} required />
+                <Input
+                  name="brand"
+                  value={form.brand}
+                  onChange={handleChange}
+                  required
+                />
 
                 <Label>Price *</Label>
-                <Input type="number" name="price" value={form.price} onChange={handleChange} required />
+                <Input
+                  type="number"
+                  name="price"
+                  value={form.price}
+                  onChange={handleChange}
+                  required
+                />
 
                 <Label>MRP *</Label>
-                <Input type="number" name="mrp" value={form.mrp} onChange={handleChange} required />
+                <Input
+                  type="number"
+                  name="mrp"
+                  value={form.mrp}
+                  onChange={handleChange}
+                  required
+                />
 
                 <Label>Description</Label>
-                <textarea name="description" value={form.description} onChange={handleChange}
-                  className="w-full h-28 border rounded-xl p-3 text-sm" />
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  className="w-full h-28 border rounded-xl p-3 text-sm"
+                />
 
                 <div className="flex justify-end">
-                  <Button type="button" onClick={() => setStep(2)}>Next →</Button>
+                  <Button type="button" onClick={() => setStep(2)}>
+                    Next →
+                  </Button>
                 </div>
               </div>
             )}
@@ -203,10 +256,16 @@ const AddProduct = () => {
                 <Label>Upload 4 Images *</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
                   {images.map((_, i) => (
-                    <div key={i} onClick={() => handleImageSelect(i)}
-                      className="w-full aspect-square border-2 rounded-2xl flex items-center justify-center cursor-pointer bg-gray-50">
+                    <div
+                      key={i}
+                      onClick={() => handleImageSelect(i)}
+                      className="w-full aspect-square border-2 rounded-2xl flex items-center justify-center cursor-pointer bg-gray-50"
+                    >
                       {previews[i] ? (
-                        <img src={previews[i]} className="w-full h-full object-cover rounded-2xl"/>
+                        <img
+                          src={previews[i]}
+                          className="w-full h-full object-cover rounded-2xl"
+                        />
                       ) : (
                         <ImagePlus className="w-7 h-7 text-gray-400" />
                       )}
@@ -215,27 +274,173 @@ const AddProduct = () => {
                 </div>
 
                 <div className="flex justify-between pt-5">
-                  <Button type="button" variant="outline" onClick={() => setStep(1)}>← Back</Button>
-                  <Button type="button" onClick={() => setStep(3)}>Next →</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                  >
+                    ← Back
+                  </Button>
+                  <Button type="button" onClick={() => setStep(3)}>
+                    Next →
+                  </Button>
                 </div>
               </div>
             )}
 
             {/* STEP 3 */}
             {step === 3 && (
-              <div className="grid gap-4">
-                <Label>Shirt Sizes</Label>
-                <Input placeholder="S, M, L, XL"
-                  value={form.sizes.shirt.map(s => s.size).join(",")}
-                  onChange={(e) => handleSizeChange("shirt", e.target.value)} />
+              <div className="space-y-6">
+                {/* SHIRT SECTION */}
+                <div>
+                  <Label className="font-semibold">Shirt Sizes</Label>
 
-                <Label>Pant Sizes</Label>
-                <Input placeholder="28, 30, 32, 34"
-                  value={form.sizes.pant.map(s => s.size).join(",")}
-                  onChange={(e) => handleSizeChange("pant", e.target.value)} />
+                  {form.sizes.shirt.map((item, index) => (
+                    <div key={index} className="flex gap-3 items-center mt-2">
+                      <Input
+                        className="w-28"
+                        placeholder="Size (S/M/L)"
+                        value={item.size}
+                        onChange={(e) => {
+                          const updated = [...form.sizes.shirt];
+                          updated[index].size = e.target.value;
+                          setForm((prev) => ({
+                            ...prev,
+                            sizes: { ...prev.sizes, shirt: updated },
+                          }));
+                        }}
+                      />
 
-                <div className="flex justify-end">
-                  <Button type="button" onClick={() => setStep(4)}>Next →</Button>
+                      <Input
+                        className="w-24"
+                        type="number"
+                        placeholder="Stock"
+                        value={item.stock}
+                        onChange={(e) => {
+                          const updated = [...form.sizes.shirt];
+                          updated[index].stock = Number(e.target.value);
+                          setForm((prev) => ({
+                            ...prev,
+                            sizes: { ...prev.sizes, shirt: updated },
+                          }));
+                        }}
+                      />
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const updated = form.sizes.shirt.filter(
+                            (_, i) => i !== index
+                          );
+                          setForm((prev) => ({
+                            ...prev,
+                            sizes: { ...prev.sizes, shirt: updated },
+                          }));
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    className="mt-3"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        sizes: {
+                          ...prev.sizes,
+                          shirt: [
+                            ...prev.sizes.shirt,
+                            { type: "shirt", size: "", stock: 0 },
+                          ],
+                        },
+                      }))
+                    }
+                  >
+                    + Add Shirt Size
+                  </Button>
+                </div>
+
+                {/* PANT SECTION */}
+                <div>
+                  <Label className="font-semibold">Pant Sizes</Label>
+
+                  {form.sizes.pant.map((item, index) => (
+                    <div key={index} className="flex gap-3 items-center mt-2">
+                      <Input
+                        className="w-28"
+                        placeholder="Size (28/30/32)"
+                        value={item.size}
+                        onChange={(e) => {
+                          const updated = [...form.sizes.pant];
+                          updated[index].size = e.target.value;
+                          setForm((prev) => ({
+                            ...prev,
+                            sizes: { ...prev.sizes, pant: updated },
+                          }));
+                        }}
+                      />
+
+                      <Input
+                        className="w-24"
+                        type="number"
+                        placeholder="Stock"
+                        value={item.stock}
+                        onChange={(e) => {
+                          const updated = [...form.sizes.pant];
+                          updated[index].stock = Number(e.target.value);
+                          setForm((prev) => ({
+                            ...prev,
+                            sizes: { ...prev.sizes, pant: updated },
+                          }));
+                        }}
+                      />
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          const updated = form.sizes.pant.filter(
+                            (_, i) => i !== index
+                          );
+                          setForm((prev) => ({
+                            ...prev,
+                            sizes: { ...prev.sizes, pant: updated },
+                          }));
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    className="mt-3"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        sizes: {
+                          ...prev.sizes,
+                          pant: [
+                            ...prev.sizes.pant,
+                            { type: "pant", size: "", stock: 0 },
+                          ],
+                        },
+                      }))
+                    }
+                  >
+                    + Add Pant Size
+                  </Button>
+                </div>
+
+                <div className="flex justify-end pt-5">
+                  <Button type="button" onClick={() => setStep(4)}>
+                    Next →
+                  </Button>
                 </div>
               </div>
             )}
@@ -245,20 +450,26 @@ const AddProduct = () => {
               <div className="space-y-5">
                 <div className="border p-2 rounded flex justify-between">
                   <Label>Featured</Label>
-                  <Switch checked={form.isFeatured}
-                    onCheckedChange={(val) => handleToggle("isFeatured", val)} />
+                  <Switch
+                    checked={form.isFeatured}
+                    onCheckedChange={(val) => handleToggle("isFeatured", val)}
+                  />
                 </div>
 
                 <div className="border p-2 rounded flex justify-between">
                   <Label>Best Seller</Label>
-                  <Switch checked={form.isBestSeller}
-                    onCheckedChange={(val) => handleToggle("isBestSeller", val)} />
+                  <Switch
+                    checked={form.isBestSeller}
+                    onCheckedChange={(val) => handleToggle("isBestSeller", val)}
+                  />
                 </div>
 
                 <div className="border p-2 rounded flex justify-between">
                   <Label>Active</Label>
-                  <Switch checked={form.isActive}
-                    onCheckedChange={(val) => handleToggle("isActive", val)} />
+                  <Switch
+                    checked={form.isActive}
+                    onCheckedChange={(val) => handleToggle("isActive", val)}
+                  />
                 </div>
 
                 <div className="text-center py-6">
@@ -266,13 +477,17 @@ const AddProduct = () => {
                     {submitting ? "Publishing..." : "Publish Product"}
                   </Button>
 
-                  <Button variant="outline" type="button" onClick={() => setStep(3)} className="mt-4">
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => setStep(3)}
+                    className="mt-4"
+                  >
                     ← Back
                   </Button>
                 </div>
               </div>
             )}
-
           </form>
         </CardContent>
       </Card>
